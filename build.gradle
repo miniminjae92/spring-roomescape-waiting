@@ -16,6 +16,10 @@ repositories {
     mavenCentral()
 }
 
+configurations {
+    mockitoAgent
+}
+
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-web'
@@ -25,6 +29,11 @@ dependencies {
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
     runtimeOnly 'com.h2database:h2'
+
+    mockitoAgent('org.mockito:mockito-core') {
+        transitive = false
+    }
+
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'io.rest-assured:rest-assured:5.3.1'
     testCompileOnly 'org.projectlombok:lombok'
@@ -34,4 +43,8 @@ dependencies {
 test {
     useJUnitPlatform()
     environment "token", System.getenv("token")
+}
+
+tasks.withType(Test).configureEach {
+    jvmArgs "-javaagent:${configurations.mockitoAgent.asPath}", "-Xshare:off"
 }
