@@ -42,7 +42,7 @@ dependencies {
 
 test {
     useJUnitPlatform()
-    environment "token", System.getenv("token")
+    environment "token", "sanwhale0192"
 }
 
 tasks.withType(Test).configureEach {
