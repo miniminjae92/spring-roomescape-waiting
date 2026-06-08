@@ -6,10 +6,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import roomescape.domain.reservation.ReservationRepository;
-import roomescape.domain.reservationdate.dto.AdminReservationDateResponse;
-import roomescape.domain.reservationdate.dto.ReservationDateCreationRequest;
-import roomescape.domain.reservationdate.dto.ReservationDateCreationResponse;
-import roomescape.domain.reservationdate.dto.ReservationDateResponse;
+import roomescape.domain.reservationdate.dto.CreateReservationDateCommand;
+import roomescape.domain.reservationdate.dto.ReservationDateResult;
 import roomescape.support.exception.ReservationDateErrorCode;
 import roomescape.support.exception.RoomescapeException;
 
@@ -21,18 +19,20 @@ public class ReservationDateService {
     private final ReservationRepository reservationRepository;
     private final ReservationDateRepository reservationDateRepository;
 
-    public List<AdminReservationDateResponse> getAllReservationDateForAdmin() {
+    public List<ReservationDateResult> getAllReservationDateForAdmin() {
         return reservationDateRepository.findAll().stream()
-            .map(AdminReservationDateResponse::from)
+            .map(ReservationDateResult::from)
             .toList();
     }
 
-    public ReservationDateCreationResponse createReservationDate(ReservationDateCreationRequest request) {
-        if (reservationDateRepository.existsByPlayDay(request.playDay())) {
+    public ReservationDateResult createReservationDate(CreateReservationDateCommand command) {
+        if (reservationDateRepository.existsByPlayDay(command.playDay())) {
             throw new RoomescapeException(ReservationDateErrorCode.RESERVATION_DATE_DUPLICATED);
         }
-        ReservationDate reservationDate = reservationDateRepository.save(request.toEntity());
-        return ReservationDateCreationResponse.from(reservationDate);
+        ReservationDate reservationDate = reservationDateRepository.save(
+            ReservationDate.createWithoutId(command.playDay())
+        );
+        return ReservationDateResult.from(reservationDate);
     }
 
     public void deleteReservationDate(Long id) {
@@ -45,10 +45,10 @@ public class ReservationDateService {
         }
     }
 
-    public List<ReservationDateResponse> getAllAvailableReservationDate() {
+    public List<ReservationDateResult> getAllAvailableReservationDate() {
         return reservationDateRepository.findAll().stream()
             .filter(reservationDate -> reservationDate.isAvailable(LocalDate.now()))
-            .map(ReservationDateResponse::from)
+            .map(ReservationDateResult::from)
             .toList();
     }
 

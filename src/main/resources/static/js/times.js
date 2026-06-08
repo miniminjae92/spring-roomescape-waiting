@@ -471,7 +471,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
 
                 try {
-                    const response = await fetch(`/waiting-reservations/${id}`, { method: "DELETE" });
+                    const response = await fetch(`/waiting-reservations/${id}/cancel`, { method: "POST" });
                     if (!response.ok) {
                         const error = await response.json().catch(() => ({}));
                         alert(getFriendlyErrorMessage(error, "대기 취소에 실패했습니다."));
@@ -495,7 +495,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
 
                 try {
-                    const response = await fetch(`/reservations/${id}`, { method: "DELETE" });
+                    const response = await fetch(`/reservations/${id}/cancel`, { method: "POST" });
                     if (!response.ok) {
                         const error = await response.json().catch(() => ({}));
                         alert(getFriendlyErrorMessage(error, "취소에 실패했습니다."));

@@ -3,7 +3,6 @@ package roomescape.domain.reservationdate.dto;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
-import roomescape.domain.reservationdate.ReservationDate;
 
 public record ReservationDateCreationRequest(
     @JsonFormat(pattern = "yyyy-MM-dd")
@@ -11,7 +10,7 @@ public record ReservationDateCreationRequest(
     LocalDate playDay
 ) {
 
-    public ReservationDate toEntity() {
-        return ReservationDate.createWithoutId(playDay);
+    public CreateReservationDateCommand toCommand() {
+        return new CreateReservationDateCommand(playDay);
     }
 }

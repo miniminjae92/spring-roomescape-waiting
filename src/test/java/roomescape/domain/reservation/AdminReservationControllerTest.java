@@ -6,6 +6,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -19,7 +20,9 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import roomescape.admin.AdminRequestValidator;
-import roomescape.domain.reservation.dto.ReservationResponse;
+import roomescape.domain.reservation.dto.ReservationResult;
+import roomescape.domain.reservationtime.ReservationTime;
+import roomescape.domain.theme.Theme;
 import roomescape.support.exception.ReservationErrorCode;
 import roomescape.support.exception.RoomescapeException;
 
@@ -40,12 +43,13 @@ class AdminReservationControllerTest {
     @Test
     void 관리자_예약_목록_조회_요청을_처리하고_200을_반환한다() throws Exception {
         when(reservationService.getAllReservations())
-            .thenReturn(List.of(new ReservationResponse(
+            .thenReturn(List.of(new ReservationResult(
                 1L,
                 "고래",
                 LocalDate.of(2026, 5, 10),
-                new ReservationResponse.ReservationTimePayload(2L, LocalTime.of(10, 0)),
-                new ReservationResponse.ThemePayload(3L, "공포", "테마 내용", "/themes/scary")
+                ReservationTime.of(2L, LocalTime.of(10, 0)),
+                Theme.of(3L, "공포", "테마 내용", "/themes/scary"),
+                ReservationStatus.RESERVED
             )));
 
         mockMvc.perform(get("/admin/reservations")
@@ -64,6 +68,15 @@ class AdminReservationControllerTest {
             .andExpect(status().isNoContent());
 
         verify(reservationService).deleteReservation(1L);
+    }
+
+    @Test
+    void 관리자_예약_취소_요청을_처리하고_204를_반환한다() throws Exception {
+        mockMvc.perform(post("/admin/reservations/1/cancel")
+                .header(ADMIN_HEADER, "token"))
+            .andExpect(status().isNoContent());
+
+        verify(reservationService).cancelReservationByAdmin(1L);
     }
 
     @Test

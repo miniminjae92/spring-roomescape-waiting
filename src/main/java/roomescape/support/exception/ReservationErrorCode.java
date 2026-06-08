@@ -20,7 +20,11 @@ public enum ReservationErrorCode implements ErrorCode {
     RESERVATION_NOT_CHANGED(HttpStatus.BAD_REQUEST,
         "변경할 예약 날짜와 시간이 기존 예약과 동일합니다.", "기존 예약과 다른 날짜 또는 시간을 선택하십시오."),
     RESERVATION_DUPLICATED(HttpStatus.CONFLICT,
-        "동일한 시간대에 중복된 예약 엔티티가 존재합니다.", "데이터베이스의 예약 현황을 확인하고 중복 요청 여부를 검토하십시오.");
+        "동일한 시간대에 중복된 예약 엔티티가 존재합니다.", "데이터베이스의 예약 현황을 확인하고 중복 요청 여부를 검토하십시오."),
+    RESERVATION_ALREADY_CANCELLED(HttpStatus.CONFLICT,
+        "이미 취소된 예약입니다.", "예약 상태를 확인하십시오."),
+    RESERVATION_HAS_ACTIVE_WAITING(HttpStatus.CONFLICT,
+        "활성 예약 대기가 있어 예약을 삭제할 수 없습니다.", "예약 취소로 대기를 승격하거나 대기를 먼저 처리하십시오.");
 
     private final HttpStatus httpStatus;
     private final String message;

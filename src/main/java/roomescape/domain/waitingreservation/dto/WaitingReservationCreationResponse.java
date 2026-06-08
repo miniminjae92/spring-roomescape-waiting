@@ -17,14 +17,14 @@ public record WaitingReservationCreationResponse(
     LocalDateTime createdAt
 ) {
 
-    public static WaitingReservationCreationResponse from(WaitingReservation waitingReservation) {
+    public static WaitingReservationCreationResponse from(WaitingReservationResult result) {
         return new WaitingReservationCreationResponse(
-            waitingReservation.getId(),
-            waitingReservation.getName(),
-            waitingReservation.getDate().getPlayDay(),
-            waitingReservation.getTime().getStartAt(),
-            ThemePayload.from(waitingReservation.getTheme()),
-            waitingReservation.getCreatedAt()
+            result.id(),
+            result.name(),
+            result.date(),
+            result.time().getStartAt(),
+            ThemePayload.from(result.theme()),
+            result.createdAt()
         );
     }
 

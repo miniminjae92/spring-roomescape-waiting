@@ -3,7 +3,6 @@ package roomescape.domain.reservationtime.dto;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalTime;
-import roomescape.domain.reservationtime.ReservationTime;
 
 public record TimeCreationRequest(
     @JsonFormat(pattern = "HH:mm")
@@ -11,7 +10,7 @@ public record TimeCreationRequest(
     LocalTime startAt
 ) {
 
-    public ReservationTime toEntity() {
-        return ReservationTime.createWithoutId(startAt);
+    public CreateReservationTimeCommand toCommand() {
+        return new CreateReservationTimeCommand(startAt);
     }
 }

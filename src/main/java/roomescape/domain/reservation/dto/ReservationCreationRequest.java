@@ -2,10 +2,6 @@ package roomescape.domain.reservation.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import roomescape.domain.reservation.Reservation;
-import roomescape.domain.reservationdate.ReservationDate;
-import roomescape.domain.reservationtime.ReservationTime;
-import roomescape.domain.theme.Theme;
 
 public record ReservationCreationRequest(
     @NotBlank(message = "예약자명은 필수입니다")
@@ -21,12 +17,7 @@ public record ReservationCreationRequest(
     Long themeId
 ) {
 
-    public Reservation toEntity(ReservationDate reservationDate, ReservationTime reservationTime, Theme theme) {
-        return Reservation.createWithoutId(
-            name,
-            reservationDate,
-            reservationTime,
-            theme
-        );
+    public CreateReservationCommand toCommand() {
+        return new CreateReservationCommand(name, dateId, timeId, themeId);
     }
 }

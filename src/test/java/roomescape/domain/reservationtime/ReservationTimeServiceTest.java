@@ -12,9 +12,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import roomescape.domain.reservation.Reservation;
 import roomescape.domain.reservation.ReservationRepository;
-import roomescape.domain.reservationtime.dto.ReservationTimeAvailabilityResponse;
-import roomescape.domain.reservationtime.dto.TimeCreationRequest;
-import roomescape.domain.reservationtime.dto.TimeCreationResponse;
+import roomescape.domain.reservationtime.dto.CreateReservationTimeCommand;
+import roomescape.domain.reservationtime.dto.ReservationTimeAvailabilityResult;
+import roomescape.domain.reservationtime.dto.ReservationTimeResult;
 import roomescape.support.exception.RoomescapeException;
 
 class ReservationTimeServiceTest {
@@ -33,11 +33,11 @@ class ReservationTimeServiceTest {
     @Test
     @DisplayName("예약 시간을 생성한다.")
     void createReservationTime() {
-        TimeCreationRequest request = new TimeCreationRequest(LocalTime.of(10, 0));
+        CreateReservationTimeCommand command = new CreateReservationTimeCommand(LocalTime.of(10, 0));
 
-        TimeCreationResponse response = reservationTimeService.createReservationTime(request);
+        ReservationTimeResult response = reservationTimeService.createReservationTime(command);
 
-        assertThat(response.startAt()).isEqualTo(request.startAt());
+        assertThat(response.startAt()).isEqualTo(command.startAt());
         assertThat(reservationTimeRepository.findAll()).hasSize(1);
     }
 
@@ -45,9 +45,9 @@ class ReservationTimeServiceTest {
     @DisplayName("중복된 시간 생성 시 예외가 발생한다.")
     void createDuplicateTime() {
         LocalTime startAt = LocalTime.of(10, 0);
-        reservationTimeService.createReservationTime(new TimeCreationRequest(startAt));
+        reservationTimeService.createReservationTime(new CreateReservationTimeCommand(startAt));
 
-        assertThatThrownBy(() -> reservationTimeService.createReservationTime(new TimeCreationRequest(startAt)))
+        assertThatThrownBy(() -> reservationTimeService.createReservationTime(new CreateReservationTimeCommand(startAt)))
             .isInstanceOf(RoomescapeException.class);
     }
 
@@ -60,7 +60,7 @@ class ReservationTimeServiceTest {
         reservationRepository.addReservedTime(time1.getId());
 
         // when
-        List<ReservationTimeAvailabilityResponse> responses = reservationTimeService.getReservationTimeAvailability(1L,
+        List<ReservationTimeAvailabilityResult> responses = reservationTimeService.getReservationTimeAvailability(1L,
             1L);
 
         // then

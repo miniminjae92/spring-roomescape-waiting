@@ -27,7 +27,19 @@ public interface ReservationRepository {
 
     Optional<Reservation> findById(Long id);
 
+    default Optional<Reservation> findByIdForUpdate(Long id) {
+        return findById(id);
+    }
+
+    default Optional<Reservation> findActiveBySlotForUpdate(Long dateId, Long timeId, Long themeId) {
+        return Optional.empty();
+    }
+
     int updateReservation(Long id, Long dateId, Long timeId);
 
     boolean existsByDateIdAndTimeIdAndThemeId(Long dateId, Long timeId, Long themeId);
+
+    default int cancelById(Long id) {
+        return deleteById(id);
+    }
 }

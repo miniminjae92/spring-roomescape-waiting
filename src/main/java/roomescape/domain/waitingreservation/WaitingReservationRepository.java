@@ -14,6 +14,10 @@ public interface WaitingReservationRepository {
 
     Optional<WaitingReservation> findOldestBySlot(long dateId, long timeId, long themeId);
 
+    default Optional<WaitingReservation> findOldestBySlotForUpdate(long dateId, long timeId, long themeId) {
+        return findOldestBySlot(dateId, timeId, themeId);
+    }
+
     List<WaitingReservationWithRank> findAllByNameWithRank(String name);
 
     List<WaitingReservationWithRank> findUpcomingByNameWithRank(
@@ -25,4 +29,24 @@ public interface WaitingReservationRepository {
     int deleteById(Long id);
 
     Optional<WaitingReservation> findById(Long id);
+
+    default Optional<WaitingReservation> findByIdForUpdate(Long id) {
+        return findById(id);
+    }
+
+    default int cancelById(Long id) {
+        return deleteById(id);
+    }
+
+    default int promote(Long id, Long reservationId) {
+        return deleteById(id);
+    }
+
+    default boolean existsActiveBySlot(long dateId, long timeId, long themeId) {
+        return findOldestBySlot(dateId, timeId, themeId).isPresent();
+    }
+
+    default List<WaitingReservation> findAll() {
+        return List.of();
+    }
 }

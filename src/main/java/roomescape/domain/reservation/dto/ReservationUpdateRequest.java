@@ -10,4 +10,7 @@ public record ReservationUpdateRequest(
     Long timeId
 ) {
 
+    public ChangeReservationCommand toCommand(Long reservationId) {
+        return new ChangeReservationCommand(reservationId, dateId, timeId);
+    }
 }

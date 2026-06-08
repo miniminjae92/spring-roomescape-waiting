@@ -1,7 +1,6 @@
 package roomescape.domain.theme.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import roomescape.domain.theme.Theme;
 
 public record ThemeCreationRequest(
     @NotBlank(message = "테마 제목은 필수입니다")
@@ -14,11 +13,7 @@ public record ThemeCreationRequest(
     String url
 ) {
 
-    public Theme toEntity() {
-        return Theme.createWithoutId(
-            name,
-            content,
-            url
-        );
+    public CreateThemeCommand toCommand() {
+        return new CreateThemeCommand(name, content, url);
     }
 }

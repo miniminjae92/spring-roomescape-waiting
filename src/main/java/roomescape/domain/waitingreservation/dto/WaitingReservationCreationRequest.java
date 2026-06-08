@@ -2,11 +2,6 @@ package roomescape.domain.waitingreservation.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import java.time.LocalDateTime;
-import roomescape.domain.reservationdate.ReservationDate;
-import roomescape.domain.reservationtime.ReservationTime;
-import roomescape.domain.theme.Theme;
-import roomescape.domain.waitingreservation.WaitingReservation;
 
 public record WaitingReservationCreationRequest(
     @NotBlank(message = "예약자명은 필수입니다")
@@ -22,12 +17,7 @@ public record WaitingReservationCreationRequest(
     Long themeId
 ) {
 
-    public WaitingReservation toEntity(
-        ReservationDate date,
-        ReservationTime time,
-        Theme theme,
-        LocalDateTime createdAt
-    ) {
-        return WaitingReservation.createWithoutId(name, date, time, theme, createdAt);
+    public CreateWaitingReservationCommand toCommand() {
+        return new CreateWaitingReservationCommand(name, dateId, timeId, themeId);
     }
 }

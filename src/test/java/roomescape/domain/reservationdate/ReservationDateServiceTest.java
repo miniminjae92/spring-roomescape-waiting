@@ -12,9 +12,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import roomescape.domain.reservation.Reservation;
 import roomescape.domain.reservation.ReservationRepository;
-import roomescape.domain.reservationdate.dto.ReservationDateCreationRequest;
-import roomescape.domain.reservationdate.dto.ReservationDateCreationResponse;
-import roomescape.domain.reservationdate.dto.ReservationDateResponse;
+import roomescape.domain.reservationdate.dto.CreateReservationDateCommand;
+import roomescape.domain.reservationdate.dto.ReservationDateResult;
 import roomescape.support.exception.RoomescapeException;
 
 class ReservationDateServiceTest {
@@ -33,11 +32,11 @@ class ReservationDateServiceTest {
     @Test
     @DisplayName("예약 날짜를 생성한다.")
     void createReservationDate() {
-        ReservationDateCreationRequest request = new ReservationDateCreationRequest(LocalDate.now().plusDays(1));
+        CreateReservationDateCommand command = new CreateReservationDateCommand(LocalDate.now().plusDays(1));
 
-        ReservationDateCreationResponse response = reservationDateService.createReservationDate(request);
+        ReservationDateResult response = reservationDateService.createReservationDate(command);
 
-        assertThat(response.playDay()).isEqualTo(request.playDay());
+        assertThat(response.playDay()).isEqualTo(command.playDay());
         assertThat(reservationDateRepository.findAll()).hasSize(1);
     }
 
@@ -45,10 +44,10 @@ class ReservationDateServiceTest {
     @DisplayName("중복된 날짜 생성 시 예외가 발생한다.")
     void createDuplicateDate() {
         LocalDate playDay = LocalDate.now().plusDays(1);
-        reservationDateService.createReservationDate(new ReservationDateCreationRequest(playDay));
+        reservationDateService.createReservationDate(new CreateReservationDateCommand(playDay));
 
         assertThatThrownBy(
-            () -> reservationDateService.createReservationDate(new ReservationDateCreationRequest(playDay)))
+            () -> reservationDateService.createReservationDate(new CreateReservationDateCommand(playDay)))
             .isInstanceOf(RoomescapeException.class);
     }
 
@@ -58,7 +57,7 @@ class ReservationDateServiceTest {
         reservationDateRepository.save(ReservationDate.createWithoutId(LocalDate.now().minusDays(1)));
         reservationDateRepository.save(ReservationDate.createWithoutId(LocalDate.now().plusDays(1)));
 
-        List<ReservationDateResponse> responses = reservationDateService.getAllAvailableReservationDate();
+        List<ReservationDateResult> responses = reservationDateService.getAllAvailableReservationDate();
 
         assertThat(responses).hasSize(1);
         assertThat(responses.get(0).playDay()).isEqualTo(LocalDate.now().plusDays(1));

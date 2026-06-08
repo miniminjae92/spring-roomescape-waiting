@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const datesList = document.getElementById("dates-list");
     const timesList = document.getElementById("times-list");
     const reservationsList = document.getElementById("reservations-list");
+    const waitingReservationsList = document.getElementById("waiting-reservations-list");
     const themeForm = document.getElementById("theme-form");
     const dateForm = document.getElementById("date-form");
     const timeForm = document.getElementById("time-form");
@@ -36,6 +37,9 @@ document.addEventListener("DOMContentLoaded", () => {
         "RESERVATION_CANNOT_CANCEL": "예약 취소/변경이 불가능한 상태입니다. 취소는 방문 전날 자정까지만 가능하니 예약 정책을 확인해 주세요.",
         "RESERVATION_CANNOT_UPDATE": "예약 변경이 불가능한 상태입니다. 변경은 방문 전날 자정까지만 가능하니 예약 정책을 확인해 주세요.",
         "RESERVATION_DUPLICATED": "선택하신 시간대에 이미 다른 예약이 존재합니다. 다른 시간이나 테마를 선택해 주세요.",
+        "RESERVATION_ALREADY_CANCELLED": "이미 취소된 예약입니다.",
+        "RESERVATION_HAS_ACTIVE_WAITING": "활성 예약 대기가 있어 예약을 삭제할 수 없습니다. 예약 대기를 먼저 처리해 주세요.",
+        "WAITING_RESERVATION_ALREADY_PROCESSED": "이미 취소되거나 승격된 예약 대기입니다.",
 
         "RESERVATION_DATE_DUPLICATED": "이미 시스템에 등록된 날짜입니다. 목록에 없는 새로운 날짜를 등록해 주세요.",
         "RESERVATION_TIME_DUPLICATED": "이미 시스템에 등록된 시간입니다. 목록에 없는 새로운 시간을 등록해 주세요.",
@@ -103,6 +107,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function getThemeImage() {
         return "/images/theme-placeholder.svg";
+    }
+
+    function statusLabel(status) {
+        const labels = {
+            RESERVED: "예약",
+            CANCELLED: "취소",
+            WAITING: "대기",
+            PROMOTED: "예약 승격"
+        };
+        return labels[status] || status;
     }
 
     async function loadThemes() {
@@ -180,9 +194,38 @@ document.addEventListener("DOMContentLoaded", () => {
                     <h3 class="item-title">${reservation.name}</h3>
                     <p class="item-subtext">${reservation.theme.name}</p>
                     <p class="item-subtext">${reservation.date} · ${reservation.time.startAt}</p>
+                    <p class="item-subtext">상태: ${statusLabel(reservation.status)}</p>
                 </div>
                 <div class="item-actions">
+                    ${reservation.status === "RESERVED"
+                        ? `<button type="button" class="secondary-button" data-cancel-type="reservation" data-id="${reservation.id}">취소</button>`
+                        : ""}
                     <button type="button" class="danger-button" data-delete-type="reservation" data-id="${reservation.id}">삭제</button>
+                </div>
+            </article>
+        `).join("");
+    }
+
+    async function loadWaitingReservations() {
+        const response = await adminFetch("/admin/waiting-reservations", { method: "GET" });
+        if (!response.ok) {
+            const error = await parseResponse(response);
+            throw new Error(getFriendlyErrorMessage(error, "예약 대기 목록을 불러오지 못했습니다."));
+        }
+        const waitingReservations = await parseResponse(response);
+        waitingReservationsList.innerHTML = waitingReservations.map((waiting) => `
+            <article class="admin-item reservation-item-admin">
+                <div class="item-main">
+                    <h3 class="item-title">${waiting.name}</h3>
+                    <p class="item-subtext">${waiting.theme.name}</p>
+                    <p class="item-subtext">${waiting.date} · ${waiting.time.startAt}</p>
+                    <p class="item-subtext">상태: ${statusLabel(waiting.status)}</p>
+                </div>
+                <div class="item-actions">
+                    ${waiting.status === "WAITING"
+                        ? `<button type="button" class="secondary-button" data-cancel-type="waiting-reservation" data-id="${waiting.id}">취소</button>`
+                        : ""}
+                    <button type="button" class="danger-button" data-delete-type="waiting-reservation" data-id="${waiting.id}">삭제</button>
                 </div>
             </article>
         `).join("");
@@ -192,11 +235,11 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!state.token) {
             return;
         }
-        await Promise.all([loadThemes(), loadDates(), loadTimes(), loadReservations()]);
-        bindDeleteButtons();
+        await Promise.all([loadThemes(), loadDates(), loadTimes(), loadReservations(), loadWaitingReservations()]);
+        bindActionButtons();
     }
 
-    function bindDeleteButtons() {
+    function bindActionButtons() {
         document.querySelectorAll("[data-delete-type]").forEach((button) => {
             button.addEventListener("click", async () => {
                 const type = button.dataset.deleteType;
@@ -207,7 +250,9 @@ document.addEventListener("DOMContentLoaded", () => {
                         ? `/admin/reservation-dates/${id}`
                         : type === "time"
                             ? `/admin/times/${id}`
-                            : `/admin/reservations/${id}`;
+                            : type === "waiting-reservation"
+                                ? `/admin/waiting-reservations/${id}`
+                                : `/admin/reservations/${id}`;
 
                 const confirmed = window.confirm("정말 삭제하시겠습니까?");
                 if (!confirmed) {
@@ -222,6 +267,34 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (!response.ok) {
                     const error = await parseResponse(response);
                     openModal(getFriendlyErrorMessage(error, "삭제에 실패했습니다."));
+                    return;
+                }
+
+                await refreshAll();
+            });
+        });
+
+        document.querySelectorAll("[data-cancel-type]").forEach((button) => {
+            button.addEventListener("click", async () => {
+                const type = button.dataset.cancelType;
+                const id = button.dataset.id;
+                const endpoint = type === "waiting-reservation"
+                    ? `/admin/waiting-reservations/${id}/cancel`
+                    : `/admin/reservations/${id}/cancel`;
+
+                const confirmed = window.confirm("정말 취소하시겠습니까?");
+                if (!confirmed) {
+                    return;
+                }
+
+                const response = await adminFetch(endpoint, { method: "POST" });
+                if (response.status === 401) {
+                    openModal("관리자 토큰이 올바르지 않습니다.");
+                    return;
+                }
+                if (!response.ok) {
+                    const error = await parseResponse(response);
+                    openModal(getFriendlyErrorMessage(error, "취소에 실패했습니다."));
                     return;
                 }
 
@@ -257,7 +330,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (target === "reservations") {
                     await loadReservations();
                 }
-                bindDeleteButtons();
+                if (target === "waiting-reservations") {
+                    await loadWaitingReservations();
+                }
+                bindActionButtons();
             } catch (error) {
                 openModal(error.message);
             }

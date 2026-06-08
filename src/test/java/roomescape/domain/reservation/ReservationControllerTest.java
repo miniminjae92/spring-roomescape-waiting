@@ -20,9 +20,10 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import roomescape.admin.AdminRequestValidator;
-import roomescape.domain.reservation.dto.ReservationCreationResponse;
-import roomescape.domain.reservation.dto.ReservationResponse;
-import roomescape.domain.reservation.dto.ReservationUpdateRequest;
+import roomescape.domain.reservation.dto.ChangeReservationCommand;
+import roomescape.domain.reservation.dto.ReservationResult;
+import roomescape.domain.reservationtime.ReservationTime;
+import roomescape.domain.theme.Theme;
 
 @WebMvcTest(ReservationController.class)
 class ReservationControllerTest {
@@ -39,12 +40,13 @@ class ReservationControllerTest {
     @Test
     void 예약_생성_요청을_처리하고_201을_반환한다() throws Exception {
         when(reservationService.createReservation(any()))
-            .thenReturn(new ReservationCreationResponse(
+            .thenReturn(new ReservationResult(
                 1L,
                 "고래",
                 LocalDate.of(2026, 5, 10),
-                LocalTime.of(10, 0),
-                new ReservationCreationResponse.ThemePayload("공포", "테마 내용", "/themes/scary")
+                ReservationTime.of(2L, LocalTime.of(10, 0)),
+                Theme.of(3L, "공포", "테마 내용", "/themes/scary"),
+                ReservationStatus.RESERVED
             ));
         String requestBody = """
                 {
@@ -86,12 +88,13 @@ class ReservationControllerTest {
     @Test
     void 이름으로_예약_조회_요청을_처리하고_200을_반환한다() throws Exception {
         when(reservationService.getReservationsByName("고래"))
-            .thenReturn(List.of(new ReservationResponse(
+            .thenReturn(List.of(new ReservationResult(
                 1L,
                 "고래",
                 LocalDate.of(2026, 5, 10),
-                new ReservationResponse.ReservationTimePayload(2L, LocalTime.of(10, 0)),
-                new ReservationResponse.ThemePayload(3L, "공포", "테마 내용", "/themes/scary")
+                ReservationTime.of(2L, LocalTime.of(10, 0)),
+                Theme.of(3L, "공포", "테마 내용", "/themes/scary"),
+                ReservationStatus.RESERVED
             )));
 
         mockMvc.perform(get("/reservations")
@@ -114,14 +117,23 @@ class ReservationControllerTest {
     }
 
     @Test
+    void 명시적인_예약_취소_요청을_처리하고_204를_반환한다() throws Exception {
+        mockMvc.perform(post("/reservations/1/cancel"))
+            .andExpect(status().isNoContent());
+
+        verify(reservationService).cancelReservation(1L);
+    }
+
+    @Test
     void 예약_변경_요청을_처리하고_200을_반환한다() throws Exception {
-        when(reservationService.updateReservation(any(Long.class), any(ReservationUpdateRequest.class)))
-            .thenReturn(new ReservationResponse(
+        when(reservationService.updateReservation(any(ChangeReservationCommand.class)))
+            .thenReturn(new ReservationResult(
                 1L,
                 "고래",
                 LocalDate.of(2026, 5, 11),
-                new ReservationResponse.ReservationTimePayload(2L, LocalTime.of(11, 0)),
-                new ReservationResponse.ThemePayload(3L, "공포", "테마 내용", "/themes/scary")
+                ReservationTime.of(2L, LocalTime.of(11, 0)),
+                Theme.of(3L, "공포", "테마 내용", "/themes/scary"),
+                ReservationStatus.RESERVED
             ));
         String requestBody = """
                 {
@@ -138,7 +150,7 @@ class ReservationControllerTest {
             .andExpect(jsonPath("$.date").value("2026-05-11"))
             .andExpect(jsonPath("$.time.startAt").value("11:00"));
 
-        verify(reservationService).updateReservation(any(Long.class), any(ReservationUpdateRequest.class));
+        verify(reservationService).updateReservation(any(ChangeReservationCommand.class));
     }
 
     @Test

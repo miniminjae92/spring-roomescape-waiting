@@ -45,4 +45,8 @@ public record ReservationSlot(
         LocalDateTime now = LocalDateTime.now(clock);
         return now.isEqual(deadline) || now.isAfter(deadline);
     }
+
+    public boolean hasStarted(Clock clock) {
+        return !LocalDateTime.now(clock).isBefore(LocalDateTime.of(date.getPlayDay(), time.getStartAt()));
+    }
 }

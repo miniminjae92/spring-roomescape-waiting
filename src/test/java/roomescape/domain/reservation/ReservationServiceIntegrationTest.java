@@ -2,13 +2,20 @@ package roomescape.domain.reservation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,13 +23,17 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.context.jdbc.Sql;
-import roomescape.domain.reservation.dto.ReservationUpdateRequest;
+import roomescape.domain.reservation.dto.ChangeReservationCommand;
 import roomescape.domain.reservationdate.ReservationDate;
 import roomescape.domain.reservationtime.ReservationTime;
 import roomescape.domain.theme.Theme;
 import roomescape.domain.waitingreservation.WaitingReservation;
+import roomescape.domain.waitingreservation.WaitingReservationStatus;
 import roomescape.domain.waitingreservation.WaitingReservationRepository;
+import roomescape.domain.waitingreservation.WaitingReservationService;
+import roomescape.domain.waitingreservation.dto.CreateWaitingReservationCommand;
 import roomescape.domain.waitingreservation.dto.WaitingReservationWithRank;
+import roomescape.support.exception.RoomescapeException;
 
 @SpringBootTest
 @Sql("/truncate.sql")
@@ -39,6 +50,9 @@ class ReservationServiceIntegrationTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private WaitingReservationService waitingReservationService;
 
     private Slot cancelledSlot;
 
@@ -78,10 +92,16 @@ class ReservationServiceIntegrationTest {
 
         reservationService.cancelReservation(cancelledReservation.getId());
 
-        assertThat(reservationRepository.findById(cancelledReservation.getId())).isEmpty();
+        assertThat(reservationRepository.findById(cancelledReservation.getId()))
+            .get()
+            .extracting(Reservation::getStatus)
+            .isEqualTo(ReservationStatus.CANCELLED);
         assertThat(reservationRepository.findByName("이산")).hasSize(1);
         assertThat(reservationRepository.findByName("다른슬롯")).isEmpty();
-        assertThat(waitingReservationRepository.findById(firstWaiting.getId())).isEmpty();
+        assertThat(waitingReservationRepository.findById(firstWaiting.getId()))
+            .get()
+            .extracting(WaitingReservation::getStatus)
+            .isEqualTo(WaitingReservationStatus.PROMOTED);
         assertThat(waitingReservationRepository.findById(otherSlotOldest.getId())).isPresent();
     }
 
@@ -133,8 +153,8 @@ class ReservationServiceIntegrationTest {
         );
 
         reservationService.updateReservation(
-            updatedReservation.getId(),
-            new ReservationUpdateRequest(
+            new ChangeReservationCommand(
+                updatedReservation.getId(),
                 newSlot.date().getId(),
                 newSlot.time().getId()
             )
@@ -146,7 +166,10 @@ class ReservationServiceIntegrationTest {
         assertThat(movedReservation.getTime().getId()).isEqualTo(newSlot.time().getId());
         assertThat(promotedReservation.getDate().getId()).isEqualTo(cancelledSlot.date().getId());
         assertThat(promotedReservation.getTime().getId()).isEqualTo(cancelledSlot.time().getId());
-        assertThat(waitingReservationRepository.findById(firstWaiting.getId())).isEmpty();
+        assertThat(waitingReservationRepository.findById(firstWaiting.getId()))
+            .get()
+            .extracting(WaitingReservation::getStatus)
+            .isEqualTo(WaitingReservationStatus.PROMOTED);
     }
 
     @Test
@@ -172,8 +195,8 @@ class ReservationServiceIntegrationTest {
         );
 
         reservationService.updateReservation(
-            updatedReservation.getId(),
-            new ReservationUpdateRequest(
+            new ChangeReservationCommand(
+                updatedReservation.getId(),
                 newSlot.date().getId(),
                 newSlot.time().getId()
             )
@@ -186,7 +209,7 @@ class ReservationServiceIntegrationTest {
     }
 
     @Test
-    void 예약_취소_중_승격된_예약_대기_삭제가_실패하면_예약_취소와_승격을_롤백한다() {
+    void 예약_취소_중_예약_대기_승격이_실패하면_예약_취소와_승격을_롤백한다() {
         Reservation cancelledReservation = reservationRepository.save(
             Reservation.createWithoutId(
                 "테스터",
@@ -198,9 +221,9 @@ class ReservationServiceIntegrationTest {
         WaitingReservation firstWaiting = waitingReservationRepository.save(
             waiting("이산", cancelledSlot, LocalDateTime.of(2026, 5, 6, 10, 0))
         );
-        doThrow(new IllegalStateException("예약 대기 삭제 실패"))
+        doThrow(new IllegalStateException("예약 대기 승격 실패"))
             .when(waitingReservationRepository)
-            .deleteById(firstWaiting.getId());
+            .promote(eq(firstWaiting.getId()), anyLong());
 
         assertThatThrownBy(() -> reservationService.cancelReservation(cancelledReservation.getId()))
             .isInstanceOf(IllegalStateException.class);
@@ -212,7 +235,7 @@ class ReservationServiceIntegrationTest {
     }
 
     @Test
-    void 예약_수정_중_승격된_예약_대기_삭제가_실패하면_예약_수정과_승격을_롤백한다() {
+    void 예약_수정_중_예약_대기_승격이_실패하면_예약_수정과_승격을_롤백한다() {
         Reservation updatedReservation = reservationRepository.save(
             Reservation.createWithoutId(
                 "테스터",
@@ -229,13 +252,13 @@ class ReservationServiceIntegrationTest {
         WaitingReservation firstWaiting = waitingReservationRepository.save(
             waiting("이산", cancelledSlot, LocalDateTime.of(2026, 5, 6, 10, 0))
         );
-        doThrow(new IllegalStateException("예약 대기 삭제 실패"))
+        doThrow(new IllegalStateException("예약 대기 승격 실패"))
             .when(waitingReservationRepository)
-            .deleteById(firstWaiting.getId());
+            .promote(eq(firstWaiting.getId()), anyLong());
 
         assertThatThrownBy(() -> reservationService.updateReservation(
-            updatedReservation.getId(),
-            new ReservationUpdateRequest(
+            new ChangeReservationCommand(
+                updatedReservation.getId(),
                 newSlot.date().getId(),
                 newSlot.time().getId()
             )
@@ -247,6 +270,80 @@ class ReservationServiceIntegrationTest {
         assertThat(rollbackedReservation.getTime().getId()).isEqualTo(cancelledSlot.time().getId());
         assertThat(reservationRepository.findByName("이산")).isEmpty();
         assertThat(waitingReservationRepository.findById(firstWaiting.getId())).isPresent();
+    }
+
+    @Test
+    void 예약_취소와_예약_대기_신청이_동시에_실행되어도_예약_없는_활성_대기는_남지_않는다() throws Exception {
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        try {
+            for (int attempt = 0; attempt < 10; attempt++) {
+                int attemptNumber = attempt;
+                long offset = attempt + 1L;
+                Slot slot = insertSlot(
+                    1_000L + offset, LocalDate.now().plusDays(10 + attempt),
+                    2_000L + offset, LocalTime.of(12, 0),
+                    3_000L + offset, "동시성-" + attempt
+                );
+                Reservation reservation = reservationRepository.save(
+                    Reservation.createWithoutId("예약자-" + attempt, slot.date(), slot.time(), slot.theme())
+                );
+                CountDownLatch start = new CountDownLatch(1);
+
+                Future<Void> cancellation = executor.submit(() -> {
+                    start.await();
+                    reservationService.cancelReservation(reservation.getId());
+                    return null;
+                });
+                Future<Boolean> waiting = executor.submit(() -> {
+                    start.await();
+                    try {
+                        waitingReservationService.createWaitingReservation(
+                            new CreateWaitingReservationCommand(
+                                "대기자-" + attemptNumber,
+                                slot.date().getId(),
+                                slot.time().getId(),
+                                slot.theme().getId()
+                            )
+                        );
+                        return true;
+                    } catch (RoomescapeException exception) {
+                        return false;
+                    }
+                });
+
+                start.countDown();
+                cancellation.get(5, TimeUnit.SECONDS);
+                boolean waitingCreated = waiting.get(5, TimeUnit.SECONDS);
+
+                Integer activeWaitingCount = jdbcTemplate.queryForObject(
+                    """
+                        select count(*)
+                        from waiting_reservation
+                        where date_id = ? and time_id = ? and theme_id = ? and status = 'WAITING'
+                        """,
+                    Integer.class,
+                    slot.date().getId(),
+                    slot.time().getId(),
+                    slot.theme().getId()
+                );
+                Integer activeReservationCount = jdbcTemplate.queryForObject(
+                    """
+                        select count(*)
+                        from reservation
+                        where date_id = ? and time_id = ? and theme_id = ? and status = 'RESERVED'
+                        """,
+                    Integer.class,
+                    slot.date().getId(),
+                    slot.time().getId(),
+                    slot.theme().getId()
+                );
+
+                assertThat(activeWaitingCount).isZero();
+                assertThat(activeReservationCount).isEqualTo(waitingCreated ? 1 : 0);
+            }
+        } finally {
+            executor.shutdownNow();
+        }
     }
 
     private WaitingReservation waiting(String name, Slot slot, LocalDateTime createdAt) {

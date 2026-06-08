@@ -17,13 +17,15 @@ public class Reservation {
     private final ReservationDate date;
     private final ReservationTime time;
     private final Theme theme;
+    private final ReservationStatus status;
 
     private Reservation(
         Long id,
         String name,
         ReservationDate date,
         ReservationTime time,
-        Theme theme
+        Theme theme,
+        ReservationStatus status
     ) {
         validate(name, date, time, theme);
         this.id = id;
@@ -31,10 +33,11 @@ public class Reservation {
         this.date = date;
         this.time = time;
         this.theme = theme;
+        this.status = status;
     }
 
     private Reservation(String name, ReservationDate date, ReservationTime time, Theme theme) {
-        this(null, name, date, time, theme);
+        this(null, name, date, time, theme, ReservationStatus.RESERVED);
     }
 
     public static Reservation createWithoutId(
@@ -58,13 +61,25 @@ public class Reservation {
         ReservationTime time,
         Theme theme
     ) {
-        return new Reservation(
-            id,
-            name,
-            date,
-            time,
-            theme
-        );
+        return of(id, name, date, time, theme, ReservationStatus.RESERVED);
+    }
+
+    public static Reservation of(
+        Long id,
+        String name,
+        ReservationDate date,
+        ReservationTime time,
+        Theme theme,
+        ReservationStatus status
+    ) {
+        return new Reservation(id, name, date, time, theme, status);
+    }
+
+    public Reservation cancel() {
+        if (status != ReservationStatus.RESERVED) {
+            throw new RoomescapeException(ReservationErrorCode.RESERVATION_ALREADY_CANCELLED);
+        }
+        return new Reservation(id, name, date, time, theme, ReservationStatus.CANCELLED);
     }
 
     private static void validate(String name, ReservationDate date, ReservationTime time, Theme theme) {

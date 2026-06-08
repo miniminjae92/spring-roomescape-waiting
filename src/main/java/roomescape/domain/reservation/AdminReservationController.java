@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 import roomescape.domain.reservation.dto.ReservationResponse;
 
@@ -18,7 +19,9 @@ public class AdminReservationController {
 
     @GetMapping("/admin/reservations")
     public ResponseEntity<List<ReservationResponse>> getAllReservation() {
-        List<ReservationResponse> response = reservationService.getAllReservations();
+        List<ReservationResponse> response = reservationService.getAllReservations().stream()
+            .map(ReservationResponse::from)
+            .toList();
         return ResponseEntity.ok(response);
     }
 
@@ -26,5 +29,11 @@ public class AdminReservationController {
     public ResponseEntity<Void> deleteReservation(@PathVariable Long id) {
         reservationService.deleteReservation(id);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+
+    @PostMapping("/admin/reservations/{id}/cancel")
+    public ResponseEntity<Void> cancelReservation(@PathVariable Long id) {
+        reservationService.cancelReservationByAdmin(id);
+        return ResponseEntity.noContent().build();
     }
 }

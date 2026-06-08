@@ -7,10 +7,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import roomescape.domain.reservation.ReservationRepository;
-import roomescape.domain.reservationtime.dto.ReservationTimeAvailabilityResponse;
-import roomescape.domain.reservationtime.dto.ReservationTimeResponse;
-import roomescape.domain.reservationtime.dto.TimeCreationRequest;
-import roomescape.domain.reservationtime.dto.TimeCreationResponse;
+import roomescape.domain.reservationtime.dto.CreateReservationTimeCommand;
+import roomescape.domain.reservationtime.dto.ReservationTimeAvailabilityResult;
+import roomescape.domain.reservationtime.dto.ReservationTimeResult;
 import roomescape.support.exception.ReservationTimeErrorCode;
 import roomescape.support.exception.RoomescapeException;
 
@@ -26,17 +25,19 @@ public class ReservationTimeService {
         return !reservedTimeIds.contains(reservationTime.getId());
     }
 
-    public TimeCreationResponse createReservationTime(TimeCreationRequest request) {
-        if (reservationTimeRepository.existsByStartAt(request.startAt())) {
+    public ReservationTimeResult createReservationTime(CreateReservationTimeCommand command) {
+        if (reservationTimeRepository.existsByStartAt(command.startAt())) {
             throw new RoomescapeException(ReservationTimeErrorCode.RESERVATION_TIME_DUPLICATED);
         }
-        ReservationTime reservationTime = reservationTimeRepository.save(request.toEntity());
-        return TimeCreationResponse.from(reservationTime);
+        ReservationTime reservationTime = reservationTimeRepository.save(
+            ReservationTime.createWithoutId(command.startAt())
+        );
+        return ReservationTimeResult.from(reservationTime);
     }
 
-    public List<ReservationTimeResponse> getAllReservationTime() {
+    public List<ReservationTimeResult> getAllReservationTime() {
         return reservationTimeRepository.findAll().stream()
-            .map(ReservationTimeResponse::from)
+            .map(ReservationTimeResult::from)
             .toList();
     }
 
@@ -50,11 +51,11 @@ public class ReservationTimeService {
         }
     }
 
-    public List<ReservationTimeAvailabilityResponse> getReservationTimeAvailability(Long themeId, Long dateId) {
+    public List<ReservationTimeAvailabilityResult> getReservationTimeAvailability(Long themeId, Long dateId) {
         List<ReservationTime> allReservationTime = reservationTimeRepository.findAll();
         Set<Long> reservedTimeIds = getReservedTimeIds(themeId, dateId);
         return allReservationTime.stream()
-            .map(reservationTime -> ReservationTimeAvailabilityResponse.of(
+            .map(reservationTime -> ReservationTimeAvailabilityResult.of(
                 reservationTime,
                 isAvailable(reservationTime, reservedTimeIds)
             ))

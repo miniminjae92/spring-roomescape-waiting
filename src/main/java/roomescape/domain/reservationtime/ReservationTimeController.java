@@ -30,7 +30,10 @@ public class ReservationTimeController {
         @RequestParam Long dateId
     ) {
         List<ReservationTimeAvailabilityResponse> response = reservationTimeService
-            .getReservationTimeAvailability(themeId, dateId);
+            .getReservationTimeAvailability(themeId, dateId)
+            .stream()
+            .map(ReservationTimeAvailabilityResponse::from)
+            .toList();
         return ResponseEntity.ok(response);
     }
 }

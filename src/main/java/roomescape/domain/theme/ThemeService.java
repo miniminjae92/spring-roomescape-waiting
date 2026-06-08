@@ -6,11 +6,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import roomescape.domain.reservation.ReservationRepository;
-import roomescape.domain.theme.dto.AdminThemeResponse;
-import roomescape.domain.theme.dto.ThemeCreationRequest;
-import roomescape.domain.theme.dto.ThemeCreationResponse;
-import roomescape.domain.theme.dto.ThemeRankResponse;
-import roomescape.domain.theme.dto.ThemeResponse;
+import roomescape.domain.theme.dto.CreateThemeCommand;
+import roomescape.domain.theme.dto.ThemeResult;
 import roomescape.support.exception.RoomescapeException;
 import roomescape.support.exception.ThemeErrorCode;
 
@@ -26,15 +23,17 @@ public class ThemeService {
     private final ThemeRepository themeRepository;
     private final ReservationRepository reservationRepository;
 
-    public List<AdminThemeResponse> getAllThemeForAdmin() {
+    public List<ThemeResult> getAllThemeForAdmin() {
         return themeRepository.findAll().stream()
-            .map(AdminThemeResponse::from)
+            .map(ThemeResult::from)
             .toList();
     }
 
-    public ThemeCreationResponse createTheme(ThemeCreationRequest request) {
-        Theme theme = themeRepository.save(request.toEntity());
-        return ThemeCreationResponse.from(theme);
+    public ThemeResult createTheme(CreateThemeCommand command) {
+        Theme theme = themeRepository.save(
+            Theme.createWithoutId(command.name(), command.content(), command.url())
+        );
+        return ThemeResult.from(theme);
     }
 
     public void deleteTheme(Long id) {
@@ -47,19 +46,19 @@ public class ThemeService {
         }
     }
 
-    public List<ThemeResponse> getAllTheme() {
+    public List<ThemeResult> getAllTheme() {
         return themeRepository.findAll().stream()
-            .map(ThemeResponse::from)
+            .map(ThemeResult::from)
             .toList();
     }
 
-    public List<ThemeRankResponse> getThemeRank() {
+    public List<ThemeResult> getThemeRank() {
         LocalDate today = LocalDate.now();
         LocalDate startDay = today.minusDays(RANK_DAYS_START);
         LocalDate endDay = today.minusDays(RANK_DAYS_END);
         List<Theme> populateThemes = themeRepository.findPopularThemes(RANK_LIMIT, startDay, endDay);
         return populateThemes.stream()
-            .map(ThemeRankResponse::from)
+            .map(ThemeResult::from)
             .toList();
     }
 

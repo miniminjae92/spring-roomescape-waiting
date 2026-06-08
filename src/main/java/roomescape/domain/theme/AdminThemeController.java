@@ -25,14 +25,18 @@ public class AdminThemeController {
 
     @GetMapping("/admin/themes")
     public ResponseEntity<List<AdminThemeResponse>> getAllThemeForAdmin() {
-        List<AdminThemeResponse> response = themeService.getAllThemeForAdmin();
+        List<AdminThemeResponse> response = themeService.getAllThemeForAdmin().stream()
+            .map(AdminThemeResponse::from)
+            .toList();
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/admin/themes")
     public ResponseEntity<ThemeCreationResponse> createTheme(
         @Valid @RequestBody ThemeCreationRequest createThemeRequest) {
-        ThemeCreationResponse response = themeService.createTheme(createThemeRequest);
+        ThemeCreationResponse response = ThemeCreationResponse.from(
+            themeService.createTheme(createThemeRequest.toCommand())
+        );
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 

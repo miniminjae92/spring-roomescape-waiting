@@ -1,7 +1,5 @@
 package roomescape.domain.theme.dto;
 
-import roomescape.domain.theme.Theme;
-
 public record AdminThemeResponse(
     Long id,
     String name,
@@ -9,12 +7,12 @@ public record AdminThemeResponse(
     String url
 ) {
 
-    public static AdminThemeResponse from(Theme theme) {
+    public static AdminThemeResponse from(ThemeResult theme) {
         return new AdminThemeResponse(
-            theme.getId(),
-            theme.getName(),
-            theme.getContent(),
-            theme.getUrl()
+            theme.id(),
+            theme.name(),
+            theme.content(),
+            theme.url()
         );
     }
 }

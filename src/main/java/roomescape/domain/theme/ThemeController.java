@@ -26,13 +26,17 @@ public class ThemeController {
 
     @GetMapping("/themes")
     public ResponseEntity<List<ThemeResponse>> getAllTheme() {
-        List<ThemeResponse> response = themeService.getAllTheme();
+        List<ThemeResponse> response = themeService.getAllTheme().stream()
+            .map(ThemeResponse::from)
+            .toList();
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/themes/rank")
     public ResponseEntity<List<ThemeRankResponse>> getThemeRank() {
-        List<ThemeRankResponse> response = themeService.getThemeRank();
+        List<ThemeRankResponse> response = themeService.getThemeRank().stream()
+            .map(ThemeRankResponse::from)
+            .toList();
         return ResponseEntity.ok(response);
     }
 }

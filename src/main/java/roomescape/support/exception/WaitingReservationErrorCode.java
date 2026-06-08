@@ -16,7 +16,9 @@ public enum WaitingReservationErrorCode implements ErrorCode {
     WAITING_RESERVATION_NOT_FOUND(HttpStatus.NOT_FOUND,
         "해당하는 예약 대기를 찾을 수 없습니다.", "요청한 예약 대기 ID의 유효성 및 DB 존재 여부를 확인하십시오."),
     DUPLICATE_WAITING_RESERVATION(HttpStatus.CONFLICT,
-        "중복으로 대기 신청을 할 수 없습니다.", "동일한 이름으로 신청된 예약 대기가 있는지 확인하세요.");
+        "중복으로 대기 신청을 할 수 없습니다.", "동일한 이름으로 신청된 예약 대기가 있는지 확인하세요."),
+    WAITING_RESERVATION_ALREADY_PROCESSED(HttpStatus.CONFLICT,
+        "이미 처리된 예약 대기입니다.", "예약 대기 상태를 확인하십시오.");
 
     private final HttpStatus httpStatus;
     private final String message;

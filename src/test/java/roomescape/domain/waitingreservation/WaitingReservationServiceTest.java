@@ -25,8 +25,8 @@ import roomescape.domain.reservationtime.ReservationTime;
 import roomescape.domain.reservationtime.ReservationTimeRepository;
 import roomescape.domain.theme.Theme;
 import roomescape.domain.theme.ThemeRepository;
-import roomescape.domain.waitingreservation.dto.WaitingReservationCreationRequest;
-import roomescape.domain.waitingreservation.dto.WaitingReservationCreationResponse;
+import roomescape.domain.waitingreservation.dto.CreateWaitingReservationCommand;
+import roomescape.domain.waitingreservation.dto.WaitingReservationResult;
 import roomescape.support.exception.RoomescapeException;
 
 class WaitingReservationServiceTest {
@@ -63,7 +63,7 @@ class WaitingReservationServiceTest {
         ReservationDate date = ReservationDate.of(1L, LocalDate.of(2026, 5, 10));
         ReservationTime time = ReservationTime.of(2L, LocalTime.of(10, 0));
         Theme theme = Theme.of(3L, "공포", "테마 내용", "/themes/scary");
-        WaitingReservationCreationRequest request = new WaitingReservationCreationRequest("고래", 1L, 2L, 3L);
+        CreateWaitingReservationCommand request = new CreateWaitingReservationCommand("고래", 1L, 2L, 3L);
         WaitingReservation savedWaiting = WaitingReservation.of(
             10L,
             "고래",
@@ -79,7 +79,7 @@ class WaitingReservationServiceTest {
         when(reservationRepository.existsByDateIdAndTimeIdAndThemeId(1L, 2L, 3L)).thenReturn(true);
         when(waitingReservationRepository.save(any(WaitingReservation.class))).thenReturn(savedWaiting);
 
-        WaitingReservationCreationResponse response = waitingReservationService.createWaitingReservation(request);
+        WaitingReservationResult response = waitingReservationService.createWaitingReservation(request);
 
         assertThat(response.id()).isEqualTo(10L);
         assertThat(response.name()).isEqualTo("고래");
@@ -93,7 +93,7 @@ class WaitingReservationServiceTest {
         ReservationDate date = ReservationDate.of(1L, LocalDate.of(2026, 5, 10));
         ReservationTime time = ReservationTime.of(2L, LocalTime.of(10, 0));
         Theme theme = Theme.of(3L, "공포", "테마 내용", "/themes/scary");
-        WaitingReservationCreationRequest request = new WaitingReservationCreationRequest("고래", 1L, 2L, 3L);
+        CreateWaitingReservationCommand request = new CreateWaitingReservationCommand("고래", 1L, 2L, 3L);
 
         when(reservationDateRepository.findById(1L)).thenReturn(Optional.of(date));
         when(reservationTimeRepository.findById(2L)).thenReturn(Optional.of(time));
@@ -110,7 +110,7 @@ class WaitingReservationServiceTest {
         ReservationDate date = ReservationDate.of(1L, LocalDate.of(2026, 5, 10));
         ReservationTime time = ReservationTime.of(2L, LocalTime.of(10, 0));
         Theme theme = Theme.of(3L, "공포", "테마 내용", "/themes/scary");
-        WaitingReservationCreationRequest request = new WaitingReservationCreationRequest("고래", 1L, 2L, 3L);
+        CreateWaitingReservationCommand request = new CreateWaitingReservationCommand("고래", 1L, 2L, 3L);
 
         when(reservationDateRepository.findById(1L)).thenReturn(Optional.of(date));
         when(reservationTimeRepository.findById(2L)).thenReturn(Optional.of(time));
@@ -128,7 +128,7 @@ class WaitingReservationServiceTest {
         ReservationDate date = ReservationDate.of(1L, LocalDate.of(2026, 5, 5));
         ReservationTime time = ReservationTime.of(2L, LocalTime.of(14, 9));
         Theme theme = Theme.of(3L, "공포", "테마 내용", "/themes/scary");
-        WaitingReservationCreationRequest request = new WaitingReservationCreationRequest("고래", 1L, 2L, 3L);
+        CreateWaitingReservationCommand request = new CreateWaitingReservationCommand("고래", 1L, 2L, 3L);
 
         when(reservationDateRepository.findById(1L)).thenReturn(Optional.of(date));
         when(reservationTimeRepository.findById(2L)).thenReturn(Optional.of(time));

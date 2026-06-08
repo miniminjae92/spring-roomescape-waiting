@@ -15,13 +15,13 @@ public record ReservationCreationResponse(
     ThemePayload theme
 ) {
 
-    public static ReservationCreationResponse from(Reservation reservation) {
+    public static ReservationCreationResponse from(ReservationResult result) {
         return new ReservationCreationResponse(
-            reservation.getId(),
-            reservation.getName(),
-            reservation.getDate().getPlayDay(),
-            reservation.getTime().getStartAt(),
-            ThemePayload.from(reservation.getTheme())
+            result.id(),
+            result.name(),
+            result.date(),
+            result.time().getStartAt(),
+            ThemePayload.from(result.theme())
         );
     }
 

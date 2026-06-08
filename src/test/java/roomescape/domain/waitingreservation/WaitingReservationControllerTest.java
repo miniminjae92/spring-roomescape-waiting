@@ -20,9 +20,9 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import roomescape.admin.AdminRequestValidator;
-import roomescape.domain.reservation.dto.ReservationResponse;
-import roomescape.domain.waitingreservation.dto.WaitingReservationCreationResponse;
-import roomescape.domain.waitingreservation.dto.WaitingReservationWithRankResponse;
+import roomescape.domain.reservationtime.ReservationTime;
+import roomescape.domain.theme.Theme;
+import roomescape.domain.waitingreservation.dto.WaitingReservationResult;
 
 @WebMvcTest(WaitingReservationController.class)
 class WaitingReservationControllerTest {
@@ -39,13 +39,16 @@ class WaitingReservationControllerTest {
     @Test
     void 예약_대기_생성_요청을_처리하고_201을_반환한다() throws Exception {
         when(waitingReservationService.createWaitingReservation(any()))
-            .thenReturn(new WaitingReservationCreationResponse(
+            .thenReturn(new WaitingReservationResult(
                 1L,
                 "고래",
                 LocalDate.of(2026, 5, 10),
-                LocalTime.of(10, 0),
-                new WaitingReservationCreationResponse.ThemePayload("공포", "테마 내용", "/themes/scary"),
-                LocalDateTime.of(2026, 5, 1, 10, 0)
+                ReservationTime.of(2L, LocalTime.of(10, 0)),
+                Theme.of(3L, "공포", "테마 내용", "/themes/scary"),
+                LocalDateTime.of(2026, 5, 1, 10, 0),
+                WaitingReservationStatus.WAITING,
+                null,
+                null
             ));
         String requestBody = """
                 {
@@ -164,16 +167,26 @@ class WaitingReservationControllerTest {
     }
 
     @Test
+    void 명시적인_예약_대기_취소_요청을_처리하고_204를_반환한다() throws Exception {
+        mockMvc.perform(post("/waiting-reservations/1/cancel"))
+            .andExpect(status().isNoContent());
+
+        verify(waitingReservationService).cancelWaitingReservation(1L);
+    }
+
+    @Test
     void 이름으로_예약_대기_조회_요청을_처리하고_200을_반환한다() throws Exception {
         when(waitingReservationService.getWaitingReservationsWithRankByName("고래"))
-            .thenReturn(List.of(new WaitingReservationWithRankResponse(
+            .thenReturn(List.of(new WaitingReservationResult(
                 1L,
                 "고래",
                 LocalDate.of(2026, 5, 10),
-                new ReservationResponse.ReservationTimePayload(2L, LocalTime.of(10, 0)),
-                new ReservationResponse.ThemePayload(3L, "공포", "테마 내용", "/themes/scary"),
-                1L,
-                LocalDateTime.of(2026, 5, 1, 10, 0)
+                ReservationTime.of(2L, LocalTime.of(10, 0)),
+                Theme.of(3L, "공포", "테마 내용", "/themes/scary"),
+                LocalDateTime.of(2026, 5, 1, 10, 0),
+                WaitingReservationStatus.WAITING,
+                null,
+                1L
             )));
 
         mockMvc.perform(get("/waiting-reservations")

@@ -17,9 +17,13 @@ public class WaitingReservation {
     private final ReservationTime time;
     private final Theme theme;
     private final LocalDateTime createdAt;
+    private final WaitingReservationStatus status;
+    private final Long promotedReservationId;
 
     private WaitingReservation(Long id, String name, ReservationDate date, ReservationTime time, Theme theme,
-        LocalDateTime createdAt) {
+        LocalDateTime createdAt,
+        WaitingReservationStatus status,
+        Long promotedReservationId) {
         validate(name, createdAt);
         this.id = id;
         this.name = name;
@@ -27,15 +31,54 @@ public class WaitingReservation {
         this.time = time;
         this.theme = theme;
         this.createdAt = createdAt;
+        this.status = status;
+        this.promotedReservationId = promotedReservationId;
     }
 
     public static WaitingReservation createWithoutId(String name, ReservationDate date, ReservationTime time, Theme theme, LocalDateTime createdAt) {
-        return new WaitingReservation(null, name, date, time, theme, createdAt);
+        return new WaitingReservation(
+            null, name, date, time, theme, createdAt, WaitingReservationStatus.WAITING, null
+        );
     }
 
     public static WaitingReservation of(Long id, String name, ReservationDate date, ReservationTime time, Theme theme,
         LocalDateTime createdAt) {
-        return new WaitingReservation(id, name, date, time, theme, createdAt);
+        return of(id, name, date, time, theme, createdAt, WaitingReservationStatus.WAITING, null);
+    }
+
+    public static WaitingReservation of(
+        Long id,
+        String name,
+        ReservationDate date,
+        ReservationTime time,
+        Theme theme,
+        LocalDateTime createdAt,
+        WaitingReservationStatus status,
+        Long promotedReservationId
+    ) {
+        return new WaitingReservation(
+            id, name, date, time, theme, createdAt, status, promotedReservationId
+        );
+    }
+
+    public WaitingReservation cancel() {
+        validateWaiting();
+        return new WaitingReservation(
+            id, name, date, time, theme, createdAt, WaitingReservationStatus.CANCELLED, null
+        );
+    }
+
+    public WaitingReservation promote(Long reservationId) {
+        validateWaiting();
+        return new WaitingReservation(
+            id, name, date, time, theme, createdAt, WaitingReservationStatus.PROMOTED, reservationId
+        );
+    }
+
+    private void validateWaiting() {
+        if (status != WaitingReservationStatus.WAITING) {
+            throw new RoomescapeException(WaitingReservationErrorCode.WAITING_RESERVATION_ALREADY_PROCESSED);
+        }
     }
 
     private static void validate(String name, LocalDateTime createdAt) {

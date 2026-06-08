@@ -18,6 +18,7 @@
             <button type="button" class="admin-nav-button" data-tab-target="dates-panel">예약 날짜 관리</button>
             <button type="button" class="admin-nav-button" data-tab-target="times-panel">예약 시간 관리</button>
             <button type="button" class="admin-nav-button" data-tab-target="reservations-panel">예약 관리</button>
+            <button type="button" class="admin-nav-button" data-tab-target="waiting-reservations-panel">예약 대기 관리</button>
         </nav>
     </div>
 </header>
@@ -117,6 +118,17 @@
             <button type="button" class="secondary-button" data-refresh-target="reservations">새로고침</button>
         </div>
         <div id="reservations-list" class="simple-list"></div>
+    </section>
+
+    <section id="waiting-reservations-panel" class="admin-panel" hidden>
+        <div class="panel-header">
+            <div>
+                <p class="admin-kicker">예약 대기 관리</p>
+                <h2>예약 대기 목록</h2>
+            </div>
+            <button type="button" class="secondary-button" data-refresh-target="waiting-reservations">새로고침</button>
+        </div>
+        <div id="waiting-reservations-list" class="simple-list"></div>
     </section>
 </main>
 

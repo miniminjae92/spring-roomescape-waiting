@@ -1,17 +1,15 @@
 package roomescape.domain.reservationdate.dto;
 
 import java.time.LocalDate;
-import roomescape.domain.reservationdate.ReservationDate;
-
 public record ReservationDateResponse(
     Long id,
     LocalDate playDay
 ) {
 
-    public static ReservationDateResponse from(ReservationDate reservationDate) {
+    public static ReservationDateResponse from(ReservationDateResult reservationDate) {
         return new ReservationDateResponse(
-            reservationDate.getId(),
-            reservationDate.getPlayDay()
+            reservationDate.id(),
+            reservationDate.playDay()
         );
     }
 }

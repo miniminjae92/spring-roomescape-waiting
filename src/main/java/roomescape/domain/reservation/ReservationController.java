@@ -27,13 +27,17 @@ public class ReservationController {
     @PostMapping("/reservations")
     public ResponseEntity<ReservationCreationResponse> createReservation(
         @Valid @RequestBody ReservationCreationRequest request) {
-        ReservationCreationResponse response = reservationService.createReservation(request);
+        ReservationCreationResponse response = ReservationCreationResponse.from(
+            reservationService.createReservation(request.toCommand())
+        );
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping("/reservations")
     public ResponseEntity<List<ReservationResponse>> getReservationsByName(@RequestParam String name) {
-        List<ReservationResponse> response = reservationService.getReservationsByName(name);
+        List<ReservationResponse> response = reservationService.getReservationsByName(name).stream()
+            .map(ReservationResponse::from)
+            .toList();
         return ResponseEntity.ok(response);
     }
 
@@ -43,12 +47,20 @@ public class ReservationController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/reservations/{id}/cancel")
+    public ResponseEntity<Void> cancelReservationByCommand(@PathVariable Long id) {
+        reservationService.cancelReservation(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @PatchMapping("/reservations/{id}")
     public ResponseEntity<ReservationResponse> updateReservation(
         @PathVariable Long id,
         @Valid @RequestBody ReservationUpdateRequest request
     ) {
-        ReservationResponse response = reservationService.updateReservation(id, request);
+        ReservationResponse response = ReservationResponse.from(
+            reservationService.updateReservation(request.toCommand(id))
+        );
         return ResponseEntity.ok(response);
     }
 }

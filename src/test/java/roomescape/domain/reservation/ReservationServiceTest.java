@@ -12,10 +12,9 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import roomescape.domain.reservation.dto.ReservationCreationRequest;
-import roomescape.domain.reservation.dto.ReservationCreationResponse;
-import roomescape.domain.reservation.dto.ReservationResponse;
-import roomescape.domain.reservation.dto.ReservationUpdateRequest;
+import roomescape.domain.reservation.dto.ChangeReservationCommand;
+import roomescape.domain.reservation.dto.CreateReservationCommand;
+import roomescape.domain.reservation.dto.ReservationResult;
 import roomescape.domain.reservationdate.ReservationDate;
 import roomescape.domain.reservationdate.ReservationDateRepository;
 import roomescape.domain.reservationtime.ReservationTime;
@@ -64,10 +63,10 @@ class ReservationServiceTest {
         ReservationTime time = reservationTimeRepository.save(ReservationTime.createWithoutId(LocalTime.of(10, 0)));
         Theme theme = themeRepository.save(Theme.createWithoutId("테마", "설명", "url"));
 
-        ReservationCreationRequest request = new ReservationCreationRequest("테스터", date.getId(), time.getId(),
+        CreateReservationCommand request = new CreateReservationCommand("테스터", date.getId(), time.getId(),
                 theme.getId());
 
-        ReservationCreationResponse response = reservationService.createReservation(request);
+        ReservationResult response = reservationService.createReservation(request);
 
         assertThat(response.name()).isEqualTo("테스터");
         assertThat(reservationRepository.findAll()).hasSize(1);
@@ -81,7 +80,7 @@ class ReservationServiceTest {
         ReservationTime time = reservationTimeRepository.save(ReservationTime.createWithoutId(LocalTime.of(10, 0)));
         Theme theme = themeRepository.save(Theme.createWithoutId("테마", "설명", "url"));
 
-        ReservationCreationRequest request = new ReservationCreationRequest("테스터", date.getId(), time.getId(),
+        CreateReservationCommand request = new CreateReservationCommand("테스터", date.getId(), time.getId(),
                 theme.getId());
 
         assertThatThrownBy(() -> reservationService.createReservation(request))
@@ -98,9 +97,9 @@ class ReservationServiceTest {
         Theme theme = themeRepository.save(Theme.createWithoutId("테마", "설명", "url"));
 
         reservationService.createReservation(
-                new ReservationCreationRequest("테스터1", date.getId(), time.getId(), theme.getId()));
+                new CreateReservationCommand("테스터1", date.getId(), time.getId(), theme.getId()));
 
-        ReservationCreationRequest duplicateRequest = new ReservationCreationRequest("테스터2", date.getId(), time.getId(),
+        CreateReservationCommand duplicateRequest = new CreateReservationCommand("테스터2", date.getId(), time.getId(),
                 theme.getId());
 
         assertThatThrownBy(() -> reservationService.createReservation(duplicateRequest))
@@ -116,9 +115,9 @@ class ReservationServiceTest {
         ReservationTime time = reservationTimeRepository.save(ReservationTime.createWithoutId(LocalTime.of(10, 0)));
         Theme theme = themeRepository.save(Theme.createWithoutId("테마", "설명", "url"));
         reservationService.createReservation(
-                new ReservationCreationRequest("테스터", date.getId(), time.getId(), theme.getId()));
+                new CreateReservationCommand("테스터", date.getId(), time.getId(), theme.getId()));
 
-        List<ReservationResponse> responses = reservationService.getReservationsByName("테스터");
+        List<ReservationResult> responses = reservationService.getReservationsByName("테스터");
 
         assertThat(responses).hasSize(1);
         assertThat(responses.get(0).name()).isEqualTo("테스터");
@@ -137,11 +136,11 @@ class ReservationServiceTest {
         ReservationTime time2 = reservationTimeRepository.save(ReservationTime.createWithoutId(LocalTime.of(11, 0)));
 
         reservationService.createReservation(
-                new ReservationCreationRequest("테스터1", date1.getId(), time1.getId(), theme.getId()));
+                new CreateReservationCommand("테스터1", date1.getId(), time1.getId(), theme.getId()));
         reservationService.createReservation(
-                new ReservationCreationRequest("테스터2", date2.getId(), time2.getId(), theme.getId()));
+                new CreateReservationCommand("테스터2", date2.getId(), time2.getId(), theme.getId()));
 
-        List<ReservationResponse> responses = reservationService.getAllReservations();
+        List<ReservationResult> responses = reservationService.getAllReservations();
 
         assertThat(responses).hasSize(2);
     }
@@ -154,12 +153,15 @@ class ReservationServiceTest {
         ReservationTime time = reservationTimeRepository.save(ReservationTime.createWithoutId(LocalTime.of(10, 0)));
         Theme theme = themeRepository.save(Theme.createWithoutId("테마", "설명", "url"));
 
-        ReservationCreationResponse response = reservationService.createReservation(
-                new ReservationCreationRequest("테스터", date.getId(), time.getId(), theme.getId()));
+        ReservationResult response = reservationService.createReservation(
+                new CreateReservationCommand("테스터", date.getId(), time.getId(), theme.getId()));
 
         reservationService.cancelReservation(response.id());
 
-        assertThat(reservationRepository.findAll()).isEmpty();
+        assertThat(reservationRepository.findById(response.id()))
+                .get()
+                .extracting(Reservation::getStatus)
+                .isEqualTo(ReservationStatus.CANCELLED);
     }
 
     @Test
@@ -170,8 +172,8 @@ class ReservationServiceTest {
         ReservationTime time = reservationTimeRepository.save(ReservationTime.createWithoutId(LocalTime.of(10, 0)));
         Theme theme = themeRepository.save(Theme.createWithoutId("테마", "설명", "url"));
 
-        ReservationCreationResponse response = reservationService.createReservation(
-                new ReservationCreationRequest("테스터", date.getId(), time.getId(), theme.getId()));
+        ReservationResult response = reservationService.createReservation(
+                new CreateReservationCommand("테스터", date.getId(), time.getId(), theme.getId()));
 
         reservationService.deleteReservation(response.id());
 
@@ -211,19 +213,20 @@ class ReservationServiceTest {
         ReservationTime time = reservationTimeRepository.save(ReservationTime.createWithoutId(LocalTime.of(10, 0)));
         Theme theme = themeRepository.save(Theme.createWithoutId("테마", "설명", "url"));
 
-        ReservationCreationResponse creationResponse = reservationService.createReservation(
-                new ReservationCreationRequest("테스터", date.getId(), time.getId(), theme.getId()));
+        ReservationResult creationResponse = reservationService.createReservation(
+                new CreateReservationCommand("테스터", date.getId(), time.getId(), theme.getId()));
 
         ReservationDate newDate = reservationDateRepository.save(
                 ReservationDate.createWithoutId(LocalDate.now().plusDays(2)));
         ReservationTime newTime = reservationTimeRepository.save(ReservationTime.createWithoutId(LocalTime.of(14, 0)));
 
-        ReservationUpdateRequest updateRequest = new ReservationUpdateRequest(newDate.getId(), newTime.getId());
+        ChangeReservationCommand updateCommand =
+                new ChangeReservationCommand(creationResponse.id(), newDate.getId(), newTime.getId());
 
-        ReservationResponse updateResponse = reservationService.updateReservation(creationResponse.id(), updateRequest);
+        ReservationResult updateResponse = reservationService.updateReservation(updateCommand);
 
         assertThat(updateResponse.date()).isEqualTo(newDate.getPlayDay());
-        assertThat(updateResponse.time().id()).isEqualTo(newTime.getId());
+        assertThat(updateResponse.time().getId()).isEqualTo(newTime.getId());
     }
 
     @Test
@@ -234,12 +237,13 @@ class ReservationServiceTest {
         ReservationTime time = reservationTimeRepository.save(ReservationTime.createWithoutId(LocalTime.of(10, 0)));
         Theme theme = themeRepository.save(Theme.createWithoutId("테마", "설명", "url"));
 
-        ReservationCreationResponse creationResponse = reservationService.createReservation(
-                new ReservationCreationRequest("테스터", date.getId(), time.getId(), theme.getId()));
+        ReservationResult creationResponse = reservationService.createReservation(
+                new CreateReservationCommand("테스터", date.getId(), time.getId(), theme.getId()));
 
-        ReservationUpdateRequest updateRequest = new ReservationUpdateRequest(date.getId(), time.getId());
+        ChangeReservationCommand updateCommand =
+                new ChangeReservationCommand(creationResponse.id(), date.getId(), time.getId());
 
-        assertThatThrownBy(() -> reservationService.updateReservation(creationResponse.id(), updateRequest))
+        assertThatThrownBy(() -> reservationService.updateReservation(updateCommand))
                 .isInstanceOf(RoomescapeException.class)
                 .hasMessageContaining(ReservationErrorCode.RESERVATION_NOT_CHANGED.getMessage());
     }
@@ -252,15 +256,16 @@ class ReservationServiceTest {
         ReservationTime time = reservationTimeRepository.save(ReservationTime.createWithoutId(LocalTime.of(10, 0)));
         Theme theme = themeRepository.save(Theme.createWithoutId("테마", "설명", "url"));
 
-        ReservationCreationResponse creationResponse = reservationService.createReservation(
-                new ReservationCreationRequest("테스터", date.getId(), time.getId(), theme.getId()));
+        ReservationResult creationResponse = reservationService.createReservation(
+                new CreateReservationCommand("테스터", date.getId(), time.getId(), theme.getId()));
 
         ReservationDate pastDate = reservationDateRepository.save(
                 ReservationDate.createWithoutId(LocalDate.now().minusDays(1)));
 
-        ReservationUpdateRequest updateRequest = new ReservationUpdateRequest(pastDate.getId(), time.getId());
+        ChangeReservationCommand updateCommand =
+                new ChangeReservationCommand(creationResponse.id(), pastDate.getId(), time.getId());
 
-        assertThatThrownBy(() -> reservationService.updateReservation(creationResponse.id(), updateRequest))
+        assertThatThrownBy(() -> reservationService.updateReservation(updateCommand))
                 .isInstanceOf(RoomescapeException.class)
                 .hasMessageContaining(ReservationDateErrorCode.RESERVATION_DATE_NOT_ALLOWED.getMessage());
     }
@@ -275,15 +280,16 @@ class ReservationServiceTest {
                 ReservationTime.createWithoutId(LocalTime.of(14, 0)));
         Theme theme = themeRepository.save(Theme.createWithoutId("테마", "설명", "url"));
 
-        ReservationCreationResponse myReservation = reservationService.createReservation(
-                new ReservationCreationRequest("내예약", date.getId(), time.getId(), theme.getId()));
+        ReservationResult myReservation = reservationService.createReservation(
+                new CreateReservationCommand("내예약", date.getId(), time.getId(), theme.getId()));
 
         reservationService.createReservation(
-                new ReservationCreationRequest("다른사람예약", date.getId(), anotherTime.getId(), theme.getId()));
+                new CreateReservationCommand("다른사람예약", date.getId(), anotherTime.getId(), theme.getId()));
 
-        ReservationUpdateRequest updateRequest = new ReservationUpdateRequest(date.getId(), anotherTime.getId());
+        ChangeReservationCommand updateCommand =
+                new ChangeReservationCommand(myReservation.id(), date.getId(), anotherTime.getId());
 
-        assertThatThrownBy(() -> reservationService.updateReservation(myReservation.id(), updateRequest))
+        assertThatThrownBy(() -> reservationService.updateReservation(updateCommand))
                 .isInstanceOf(RoomescapeException.class)
                 .hasMessageContaining(ReservationErrorCode.RESERVATION_DUPLICATED.getMessage());
     }
@@ -301,9 +307,10 @@ class ReservationServiceTest {
         Reservation reservation = reservationRepository.save(
                 Reservation.createWithoutId("마감예약테스터", date, time, theme));
 
-        ReservationUpdateRequest updateRequest = new ReservationUpdateRequest(date.getId(), newTime.getId());
+        ChangeReservationCommand updateCommand =
+                new ChangeReservationCommand(reservation.getId(), date.getId(), newTime.getId());
 
-        assertThatThrownBy(() -> reservationService.updateReservation(reservation.getId(), updateRequest))
+        assertThatThrownBy(() -> reservationService.updateReservation(updateCommand))
                 .isInstanceOf(RoomescapeException.class)
                 .hasMessageContaining(ReservationDateErrorCode.RESERVATION_DATE_NOT_ALLOWED.getMessage());
     }
@@ -330,6 +337,17 @@ class ReservationServiceTest {
         public int deleteById(Long id) {
             boolean removed = reservations.removeIf(r -> r.getId().equals(id));
             return removed ? 1 : 0;
+        }
+
+        @Override
+        public int cancelById(Long id) {
+            Optional<Reservation> target = findById(id);
+            if (target.isEmpty()) {
+                return 0;
+            }
+            reservations.remove(target.get());
+            reservations.add(target.get().cancel());
+            return 1;
         }
 
         @Override

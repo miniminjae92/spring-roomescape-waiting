@@ -24,7 +24,9 @@ public class AdminReservationDateController {
     @GetMapping("/admin/reservation-dates")
     public ResponseEntity<List<AdminReservationDateResponse>> getAllReservationDateForAdmin(
     ) {
-        List<AdminReservationDateResponse> response = reservationDateService.getAllReservationDateForAdmin();
+        List<AdminReservationDateResponse> response = reservationDateService.getAllReservationDateForAdmin().stream()
+            .map(AdminReservationDateResponse::from)
+            .toList();
         return ResponseEntity.ok(response);
     }
 
@@ -32,8 +34,9 @@ public class AdminReservationDateController {
     public ResponseEntity<ReservationDateCreationResponse> createReservationDate(
         @Valid @RequestBody ReservationDateCreationRequest createReservationDateRequest
     ) {
-        ReservationDateCreationResponse response = reservationDateService
-            .createReservationDate(createReservationDateRequest);
+        ReservationDateCreationResponse response = ReservationDateCreationResponse.from(
+            reservationDateService.createReservationDate(createReservationDateRequest.toCommand())
+        );
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 

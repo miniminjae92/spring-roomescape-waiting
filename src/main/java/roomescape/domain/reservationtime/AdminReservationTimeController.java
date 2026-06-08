@@ -27,7 +27,9 @@ public class AdminReservationTimeController {
 
     @GetMapping("/admin/times")
     public ResponseEntity<List<ReservationTimeResponse>> getAllReservationTime() {
-        List<ReservationTimeResponse> response = reservationTimeService.getAllReservationTime();
+        List<ReservationTimeResponse> response = reservationTimeService.getAllReservationTime().stream()
+            .map(ReservationTimeResponse::from)
+            .toList();
         return ResponseEntity.ok(response);
     }
 
@@ -35,7 +37,9 @@ public class AdminReservationTimeController {
     public ResponseEntity<TimeCreationResponse> createReservationTime(
         @Valid @RequestBody TimeCreationRequest createTimeRequest
     ) {
-        TimeCreationResponse response = reservationTimeService.createReservationTime(createTimeRequest);
+        TimeCreationResponse response = TimeCreationResponse.from(
+            reservationTimeService.createReservationTime(createTimeRequest.toCommand())
+        );
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 

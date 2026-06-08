@@ -12,9 +12,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import roomescape.domain.reservation.Reservation;
 import roomescape.domain.reservation.ReservationRepository;
-import roomescape.domain.theme.dto.ThemeCreationRequest;
-import roomescape.domain.theme.dto.ThemeCreationResponse;
-import roomescape.domain.theme.dto.ThemeResponse;
+import roomescape.domain.theme.dto.CreateThemeCommand;
+import roomescape.domain.theme.dto.ThemeResult;
 import roomescape.support.exception.RoomescapeException;
 
 class ThemeServiceTest {
@@ -33,9 +32,9 @@ class ThemeServiceTest {
     @Test
     @DisplayName("테마를 생성한다.")
     void createTheme() {
-        ThemeCreationRequest request = new ThemeCreationRequest("테마", "설명", "url");
+        CreateThemeCommand command = new CreateThemeCommand("테마", "설명", "url");
         
-        ThemeCreationResponse response = themeService.createTheme(request);
+        ThemeResult response = themeService.createTheme(command);
 
         assertThat(response.name()).isEqualTo("테마");
         assertThat(themeRepository.findAll()).hasSize(1);
