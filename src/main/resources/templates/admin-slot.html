@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>운영 회차 관리 - Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #f59e0b;
+            --primary-hover: #d97706;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+            --bg-dark: #09090b;
+            --bg-card: rgba(255, 255, 255, 0.03);
+            --border-glass: rgba(255, 255, 255, 0.1);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Outfit', -apple-system, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+        }
+
+        .nav-header {
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-glass);
+            background: rgba(9,9,11,0.8);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-header a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: color 0.2s;
+        }
+
+        .nav-header a:hover { color: white; }
+
+        .nav-links { display: flex; gap: 1.5rem; }
+        .nav-links a.active { color: var(--primary); }
+
+        .container {
+            max-width: 800px;
+            margin: 3rem auto;
+            padding: 0 2rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 900;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            margin-bottom: 3rem;
+            font-size: 1.1rem;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-glass);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        h2 {
+            font-size: 1.3rem;
+            margin-bottom: 1.5rem;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        h2::before {
+            content: '';
+            display: inline-block;
+            width: 4px;
+            height: 1.3rem;
+            background: var(--primary);
+            border-radius: 2px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        label {
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        input {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-glass);
+            border-radius: 12px;
+            font-size: 1.1rem;
+            color: white;
+            outline: none;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+            background: rgba(0, 0, 0, 0.5);
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+        }
+
+        button.btn-primary {
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+            color: var(--bg-dark);
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 900;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 10px 20px rgba(245, 158, 11, 0.3);
+            font-family: inherit;
+            text-transform: uppercase;
+            height: 52px;
+            margin-top: 1rem;
+        }
+
+        button.btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 25px rgba(245, 158, 11, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="nav-header">
+        <a href="/admin">&larr; 관리자 메인</a>
+        <div class="nav-links">
+            <a href="/admin/reservation">예약 현황</a>
+            <a href="/admin/date">날짜 관리</a>
+            <a href="/admin/time">시간 관리</a>
+            <a href="/admin/theme">테마 관리</a>
+            <a href="/admin/slot" class="active">회차 관리</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <h1>SLOT MANAGEMENT</h1>
+        <p class="subtitle">등록된 날짜·시간·테마 ID를 조합해 실제 예약 가능한 회차를 만듭니다.</p>
+
+        <div class="card">
+            <h2>판매 회차 생성</h2>
+            <form id="slotForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>날짜 ID</label>
+                        <input type="number" id="dateId" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label>시간 ID</label>
+                        <input type="number" id="timeId" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label>테마 ID</label>
+                        <input type="number" id="themeId" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label>회차 가격 (미입력시 테마 기본가격)</label>
+                        <input type="number" id="price" min="1">
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary" style="width:100%">회차 생성하기</button>
+            </form>
+        </div>
+    </div>
+
+<script type="module">
+    import { createReservationSlot, requireManager } from '/js/api.js';
+    import { showToast } from '/js/utils.js';
+
+    const slotForm = document.getElementById('slotForm');
+
+    slotForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const dateId = document.getElementById('dateId').value;
+        const timeId = document.getElementById('timeId').value;
+        const themeId = document.getElementById('themeId').value;
+        const price = document.getElementById('price').value;
+
+        const payload = {
+            dateId: Number(dateId),
+            timeId: Number(timeId),
+            themeId: Number(themeId),
+            price: price ? Number(price) : null
+        };
+
+        try {
+            const result = await createReservationSlot(payload);
+            showToast(`새로운 회차가 등록되었습니다. (ID: ${result.id})`, 'success');
+            slotForm.reset();
+        } catch (e) {
+            showToast(e.message || '회차를 추가할 수 없습니다.', 'error');
+        }
+    });
+
+    await requireManager();
+</script>
+</body>
+</html>

@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>내 예약 조회 - Roomescape</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #f59e0b;
+            --primary-hover: #d97706;
+            --danger: #ef4444;
+            --bg-dark: #09090b;
+            --bg-card: rgba(255, 255, 255, 0.03);
+            --border-glass: rgba(255, 255, 255, 0.1);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Outfit', -apple-system, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+        }
+
+        .nav-header {
+            padding: 1.5rem 2rem;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid var(--border-glass);
+            background: rgba(9,9,11,0.8);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-header a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 3rem auto;
+            padding: 0 2rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 900;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            margin-bottom: 3rem;
+            font-size: 1.1rem;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 3rem;
+        }
+
+        input {
+            flex: 1;
+            padding: 1.2rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-glass);
+            border-radius: 12px;
+            font-size: 1.1rem;
+            color: white;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+        }
+
+        button {
+            padding: 1.2rem 2rem;
+            background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+            color: var(--bg-dark);
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 900;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        .reservation-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .pagination {
+            display: none;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .pagination button {
+            padding: 0.8rem 1.2rem;
+            font-size: 0.95rem;
+        }
+
+        .pagination button:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .page-indicator {
+            min-width: 4rem;
+            color: var(--text-muted);
+            text-align: center;
+            font-weight: 700;
+        }
+
+        .reservation-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-glass);
+            border-radius: 16px;
+            padding: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .reservation-card.inactive {
+            opacity: 0.7;
+        }
+
+        .info h3 { margin-bottom: 0.5rem; font-size: 1.3rem; }
+        .info p { color: var(--text-muted); font-size: 1rem; margin-bottom: 0.2rem; }
+
+        .actions { display: flex; gap: 0.5rem; }
+
+        .status-badge {
+            padding: 0.5rem 0.8rem;
+            border-radius: 999px;
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
+
+        .status-completed {
+            color: var(--text-muted);
+            background: rgba(148, 163, 184, 0.12);
+        }
+
+        .status-cancelled {
+            color: var(--danger);
+            background: rgba(239, 68, 68, 0.12);
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            justify-content: center; align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: var(--bg-dark);
+            padding: 2rem;
+            border-radius: 20px;
+            border: 1px solid var(--border-glass);
+            width: 100%; max-width: 500px;
+        }
+        .modal-content h2 { margin-bottom: 1.5rem; }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; color: var(--text-muted); }
+        .form-group select {
+            width: 100%; padding: 1rem; background: rgba(0,0,0,0.3); color: white;
+            border: 1px solid var(--border-glass); border-radius: 8px;
+        }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem; }
+    </style>
+</head>
+<body>
+    <div class="nav-header">
+        <a href="/">&larr; 메인으로 돌아가기</a>
+    </div>
+
+    <div class="container">
+        <h1>MY RESERVATIONS</h1>
+        <p class="subtitle">예약하신 내역을 조회하고 일정을 변경하거나 취소할 수 있습니다.</p>
+
+        <div class="reservation-list" id="resList">
+            <!-- Items -->
+        </div>
+
+    </div>
+
+<script type="module">
+    import { fetchMe, cancelMyReservation } from '/js/api.js';
+    import { showToast } from '/js/utils.js';
+
+    const resList = document.getElementById('resList');
+
+    window.cancelRes = async (id) => {
+        if(!confirm('정말로 이 예약을 취소하시겠습니까?')) return;
+        try {
+            await cancelMyReservation(id);
+            showToast('예약이 성공적으로 취소되었습니다.', 'success');
+            await loadReservations();
+        } catch(e) {
+            showToast(e.message, 'error');
+        }
+    };
+
+    window.cancelWaiting = async (id) => {
+        if(!confirm('정말로 대기를 취소하시겠습니까?')) return;
+        try {
+            const response = await fetch(`/waiting-reservations/${id}`, { method: 'DELETE' });
+            if (!response.ok) throw new Error('대기 취소 실패');
+            showToast('대기가 취소되었습니다.', 'success');
+            await loadReservations();
+        } catch(e) {
+            showToast(e.message, 'error');
+        }
+    };
+
+    async function loadReservations() {
+        resList.innerHTML = '<p style="text-align:center; color:#94a3b8;">조회 중...</p>';
+        try {
+            const [resResponse, waitingResponse] = await Promise.all([
+                fetch('/reservations', { credentials: 'same-origin', headers: { 'Cache-Control': 'no-cache' } }),
+                fetch('/waiting-reservations', { credentials: 'same-origin', headers: { 'Cache-Control': 'no-cache' } })
+            ]);
+
+            const reservations = await resResponse.json();
+            const waitingReservations = await waitingResponse.json();
+
+            resList.innerHTML = '';
+            if(reservations.length === 0 && waitingReservations.length === 0) {
+                resList.innerHTML = '<p style="text-align:center; color:#94a3b8;">예약 또는 대기 내역이 없습니다.</p>';
+                return;
+            }
+
+            reservations.forEach(r => {
+                const div = document.createElement('div');
+                div.className = 'reservation-card';
+                div.innerHTML = `
+                    <div class="info">
+                        <h3>${r.theme ? r.theme.name : '알수없음'} <span class="status-badge" style="background: rgba(16, 185, 129, 0.2); color: #10b981; margin-left: 0.5rem;">예약 확정</span></h3>
+                        <p>${r.date} | ${r.time ? r.time.startAt : '알수없음'}</p>
+                    </div>
+                    <div class="actions">
+                        <button type="button" class="btn-danger" onclick="cancelRes(${r.id})">예약 취소</button>
+                    </div>
+                `;
+                resList.appendChild(div);
+            });
+
+            waitingReservations.forEach(r => {
+                const div = document.createElement('div');
+                div.className = 'reservation-card';
+                div.innerHTML = `
+                    <div class="info">
+                        <h3>${r.theme ? r.theme.name : '알수없음'} <span class="status-badge" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b; margin-left: 0.5rem;">대기 ${r.rank}순위</span></h3>
+                        <p>${r.date} | ${r.time ? r.time.startAt : '알수없음'}</p>
+                    </div>
+                    <div class="actions">
+                        <button type="button" class="btn-danger" onclick="cancelWaiting(${r.id})">대기 취소</button>
+                    </div>
+                `;
+                resList.appendChild(div);
+            });
+
+        } catch(e) {
+            resList.innerHTML = '<p style="text-align:center; color:#ef4444;">조회 중 오류가 발생했습니다.</p>';
+        }
+    }
+
+    async function bootstrap() {
+        try {
+            const me = await fetchMe();
+            if (!me) {
+                window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname);
+                return;
+            }
+            await loadReservations();
+        } catch (e) {
+            window.location.href = '/login';
+        }
+    }
+
+    bootstrap();
+
+</script>
+</body>
+</html>
