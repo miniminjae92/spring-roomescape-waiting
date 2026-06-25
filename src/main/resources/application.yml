@@ -14,4 +14,7 @@ spring:
       ddl-auto: create-drop
     defer-datasource-initialization: true
 
-팅token: ${ADMIN_TOKEN:sanwhale0192}
+auth:
+  session:
+    ttl: ${AUTH_SESSION_TTL:PT2H}
+    secure-cookie: ${AUTH_COOKIE_SECURE:false}

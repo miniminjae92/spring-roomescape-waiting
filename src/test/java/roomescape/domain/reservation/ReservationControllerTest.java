@@ -19,7 +19,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import roomescape.admin.AdminRequestValidator;
+import roomescape.auth.SessionManager;
 import roomescape.domain.reservation.dto.ReservationCreationResponse;
 import roomescape.domain.reservation.dto.ReservationResponse;
 import roomescape.domain.reservation.dto.ReservationUpdateRequest;
@@ -34,7 +34,7 @@ class ReservationControllerTest {
     private ReservationService reservationService;
 
     @MockitoBean
-    private AdminRequestValidator adminRequestValidator;
+    private SessionManager sessionManager;
 
     @Test
     void 예약_생성_요청을_처리하고_201을_반환한다() throws Exception {

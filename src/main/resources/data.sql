@@ -1,3 +1,6 @@
+INSERT INTO member (login_id, password_hash, name, role, created_at)
+VALUES ('manager', '120000:cm9vbWVzY2FwZS1hZG1pbg==:Rsjyx2r1Hk61aHoeG2LRlF2Sjf50zb4ph6tZqqn6mCo=', '관리자', 'MANAGER', CURRENT_TIMESTAMP);
+
 INSERT INTO reservation_time (start_at)
 VALUES ('10:00'),
        ('11:00'),

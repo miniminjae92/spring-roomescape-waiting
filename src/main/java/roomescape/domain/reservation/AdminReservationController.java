@@ -8,10 +8,12 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
+import roomescape.auth.LoginRequired;
 import roomescape.domain.reservation.dto.ReservationResponse;
 
 @RestController
 @RequiredArgsConstructor
+@LoginRequired(managerOnly = true)
 public class AdminReservationController {
 
     private final ReservationService reservationService;

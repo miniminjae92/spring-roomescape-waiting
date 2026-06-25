@@ -1,3 +1,15 @@
+CREATE TABLE IF NOT EXISTS member
+(
+    id            BIGINT       NOT NULL AUTO_INCREMENT,
+    login_id      VARCHAR(255) NOT NULL,
+    password_hash VARCHAR(512) NOT NULL,
+    name          VARCHAR(255) NOT NULL,
+    role          VARCHAR(20)  NOT NULL,
+    created_at    TIMESTAMP    NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE (login_id)
+);
+
 CREATE TABLE IF NOT EXISTS reservation_time
 (
     id       BIGINT       NOT NULL AUTO_INCREMENT,

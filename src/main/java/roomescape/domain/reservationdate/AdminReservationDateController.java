@@ -11,12 +11,14 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import roomescape.auth.LoginRequired;
 import roomescape.domain.reservationdate.dto.AdminReservationDateResponse;
 import roomescape.domain.reservationdate.dto.ReservationDateCreationRequest;
 import roomescape.domain.reservationdate.dto.ReservationDateCreationResponse;
 
 @RestController
 @RequiredArgsConstructor
+@LoginRequired(managerOnly = true)
 public class AdminReservationDateController {
 
     private final ReservationDateService reservationDateService;

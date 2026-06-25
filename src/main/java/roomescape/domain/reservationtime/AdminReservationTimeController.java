@@ -1,6 +1,5 @@
 package roomescape.domain.reservationtime;
 
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -11,9 +10,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import roomescape.admin.AdminRequestValidator;
+import roomescape.auth.LoginRequired;
 import roomescape.domain.reservationtime.dto.ReservationTimeAvailabilityResponse;
 import roomescape.domain.reservationtime.dto.ReservationTimeResponse;
 import roomescape.domain.reservationtime.dto.TimeCreationRequest;
@@ -21,6 +19,7 @@ import roomescape.domain.reservationtime.dto.TimeCreationResponse;
 
 @RestController
 @RequiredArgsConstructor
+@LoginRequired(managerOnly = true)
 public class AdminReservationTimeController {
 
     private final ReservationTimeService reservationTimeService;

@@ -1,6 +1,5 @@
 package roomescape.domain.theme;
 
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -12,13 +11,14 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
-import roomescape.admin.AdminRequestValidator;
+import roomescape.auth.LoginRequired;
 import roomescape.domain.theme.dto.AdminThemeResponse;
 import roomescape.domain.theme.dto.ThemeCreationRequest;
 import roomescape.domain.theme.dto.ThemeCreationResponse;
 
 @RestController
 @RequiredArgsConstructor
+@LoginRequired(managerOnly = true)
 public class AdminThemeController {
 
     private final ThemeService themeService;

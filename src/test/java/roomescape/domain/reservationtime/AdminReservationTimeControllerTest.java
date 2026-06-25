@@ -19,22 +19,26 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.test.context.jdbc.Sql;
+import roomescape.auth.LoginMember;
+import roomescape.auth.SessionManager;
+import roomescape.domain.member.MemberRole;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Sql("/truncate.sql")
 class AdminReservationTimeControllerTest {
 
-    private static final String ADMIN_HEADER = "X-ADMIN-TOKEN";
     @LocalServerPort
     private int port;
     @Autowired
     private JdbcTemplate jdbcTemplate;
-    @org.springframework.beans.factory.annotation.Value("${token:boyesumin2sanchaerin}")
-    private String adminToken;
+    @Autowired
+    private SessionManager sessionManager;
+    private String sessionId;
 
     @BeforeEach
     void setUp() {
         RestAssured.port = port;
+        sessionId = sessionManager.create(new LoginMember(1L, MemberRole.MANAGER));
     }
 
     @Test
@@ -44,7 +48,7 @@ class AdminReservationTimeControllerTest {
         params.put("startAt", "23:00");
 
         RestAssured.given().log().all()
-            .header(ADMIN_HEADER, adminToken)
+            .cookie(SessionManager.COOKIE_NAME, sessionId)
             .contentType(ContentType.JSON)
             .body(params)
             .when().post("/admin/times")
@@ -59,7 +63,7 @@ class AdminReservationTimeControllerTest {
         jdbcTemplate.update("insert into reservation_time(start_at) values (?)", "23:00");
 
         RestAssured.given().log().all()
-            .header(ADMIN_HEADER, adminToken)
+            .cookie(SessionManager.COOKIE_NAME, sessionId)
             .when().get("/admin/times")
             .then().log().all()
             .statusCode(200)
@@ -79,7 +83,7 @@ class AdminReservationTimeControllerTest {
         Long timeId = Objects.requireNonNull(keyHolder.getKey()).longValue();
 
         RestAssured.given().log().all()
-            .header(ADMIN_HEADER, adminToken)
+            .cookie(SessionManager.COOKIE_NAME, sessionId)
             .when().delete("/admin/times/" + timeId)
             .then().log().all()
             .statusCode(204);

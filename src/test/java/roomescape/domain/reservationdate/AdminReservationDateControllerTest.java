@@ -19,6 +19,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.test.context.jdbc.Sql;
+import roomescape.auth.LoginMember;
+import roomescape.auth.SessionManager;
+import roomescape.domain.member.MemberRole;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Sql("/truncate.sql")
@@ -30,13 +33,14 @@ class AdminReservationDateControllerTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    @org.springframework.beans.factory.annotation.Value("${token}")
-    private String adminToken;
-    private static final String ADMIN_HEADER = "X-ADMIN-TOKEN";
+    @Autowired
+    private SessionManager sessionManager;
+    private String sessionId;
 
     @BeforeEach
     void setUp() {
         RestAssured.port = port;
+        sessionId = sessionManager.create(new LoginMember(1L, MemberRole.MANAGER));
     }
 
     @Test
@@ -47,7 +51,7 @@ class AdminReservationDateControllerTest {
         params.put("playDay", farFutureDate);
 
         RestAssured.given().log().all()
-            .header(ADMIN_HEADER, adminToken)
+            .cookie(SessionManager.COOKIE_NAME, sessionId)
             .contentType("application/json")
             .body(params)
             .when().post("/admin/reservation-dates")
@@ -63,7 +67,7 @@ class AdminReservationDateControllerTest {
         jdbcTemplate.update("insert into reservation_date(play_day) values (?)", farFutureDate);
 
         RestAssured.given().log().all()
-            .header(ADMIN_HEADER, adminToken)
+            .cookie(SessionManager.COOKIE_NAME, sessionId)
             .when().get("/admin/reservation-dates")
             .then().log().all()
             .statusCode(200)
@@ -83,7 +87,7 @@ class AdminReservationDateControllerTest {
         Long dateId = Objects.requireNonNull(keyHolder.getKey()).longValue();
 
         RestAssured.given().log().all()
-            .header(ADMIN_HEADER, adminToken)
+            .cookie(SessionManager.COOKIE_NAME, sessionId)
             .when().delete("/admin/reservation-dates/" + dateId)
             .then().log().all()
             .statusCode(204);
