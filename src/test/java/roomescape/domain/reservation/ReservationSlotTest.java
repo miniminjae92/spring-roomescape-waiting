@@ -57,9 +57,12 @@ class ReservationSlotTest {
 
     private ReservationSlot slot(LocalDate playDay, LocalTime startAt) {
         return ReservationSlot.of(
+            1L,
             ReservationDate.of(1L, playDay),
             ReservationTime.of(1L, startAt),
-            THEME
+            THEME,
+            ReservationSlotStatus.OPEN,
+            30_000L
         );
     }
 }

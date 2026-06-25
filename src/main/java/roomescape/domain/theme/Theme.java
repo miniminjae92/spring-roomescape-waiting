@@ -7,6 +7,7 @@ import jakarta.persistence.Id;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.ColumnDefault;
 import roomescape.support.exception.RoomescapeException;
 import roomescape.support.exception.ThemeErrorCode;
 
@@ -21,37 +22,39 @@ public class Theme {
     private String name;
     private String content;
     private String url;
+    @ColumnDefault("30000")
+    private long price;
 
-    private Theme(Long id, String name, String content, String url) {
-        validate(name, content, url);
+    private Theme(Long id, String name, String content, String url, long price) {
+        validate(name, content, url, price);
         this.id = id;
         this.name = name;
         this.content = content;
         this.url = url;
+        this.price = price;
     }
 
-    private Theme(String name, String content, String url) {
-        this(null, name, content, url);
+    private Theme(String name, String content, String url, long price) {
+        this(null, name, content, url, price);
     }
 
     public static Theme of(Long id, String name, String content, String url) {
-        return new Theme(
-            id,
-            name,
-            content,
-            url
-        );
+        return of(id, name, content, url, 30_000L);
+    }
+
+    public static Theme of(Long id, String name, String content, String url, long price) {
+        return new Theme(id, name, content, url, price);
     }
 
     public static Theme createWithoutId(String name, String content, String url) {
-        return new Theme(
-            name,
-            content,
-            url
-        );
+        return createWithoutId(name, content, url, 30_000L);
     }
 
-    private static void validate(String name, String content, String url) {
+    public static Theme createWithoutId(String name, String content, String url, long price) {
+        return new Theme(name, content, url, price);
+    }
+
+    private static void validate(String name, String content, String url, long price) {
         if (name == null) {
             throw new RoomescapeException(ThemeErrorCode.INVALID_THEME_NAME);
         }
@@ -60,6 +63,9 @@ public class Theme {
         }
         if (url == null) {
             throw new RoomescapeException(ThemeErrorCode.INVALID_THEME_URL);
+        }
+        if (price <= 0) {
+            throw new RoomescapeException(ThemeErrorCode.INVALID_THEME_PRICE);
         }
     }
 }

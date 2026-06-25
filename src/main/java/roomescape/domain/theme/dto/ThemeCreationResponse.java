@@ -6,7 +6,8 @@ public record ThemeCreationResponse(
     Long id,
     String name,
     String content,
-    String url
+    String url,
+    long price
 ) {
 
     public static ThemeCreationResponse from(Theme theme) {
@@ -14,7 +15,8 @@ public record ThemeCreationResponse(
             theme.getId(),
             theme.getName(),
             theme.getContent(),
-            theme.getUrl()
+            theme.getUrl(),
+            theme.getPrice()
         );
     }
 }

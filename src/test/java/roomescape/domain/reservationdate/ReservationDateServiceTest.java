@@ -78,7 +78,7 @@ class ReservationDateServiceTest {
     void deleteInUseDate() {
         ReservationDate date = ReservationDate.of(1L, LocalDate.now().plusDays(1));
         when(reservationDateRepository.findById(date.getId())).thenReturn(Optional.of(date));
-        when(reservationRepository.countByDateId(date.getId())).thenReturn(1);
+        when(reservationRepository.countBySlotDateId(date.getId())).thenReturn(1);
 
         assertThatThrownBy(() -> reservationDateService.deleteReservationDate(date.getId()))
             .isInstanceOf(RoomescapeException.class);

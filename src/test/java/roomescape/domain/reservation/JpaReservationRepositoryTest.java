@@ -43,6 +43,9 @@ class JpaReservationRepositoryTest {
     private MemberRepository memberRepository;
 
     @Autowired
+    private ReservationSlotRepository slotRepository;
+
+    @Autowired
     private TestEntityManager entityManager;
 
     private ReservationDate reservationDate;
@@ -97,12 +100,16 @@ class JpaReservationRepositoryTest {
     }
 
     private Reservation reservation(ReservationDate date, ReservationTime time, Theme reservationTheme) {
-        return Reservation.createWithoutId(
-            member.getName(),
-            member,
+        ReservationSlot slot = slotRepository.save(ReservationSlot.createWithoutId(
             date,
             time,
             reservationTheme,
+            reservationTheme.getPrice()
+        ));
+        return Reservation.createWithoutId(
+            member.getName(),
+            member,
+            slot,
             LocalDateTime.now()
         );
     }

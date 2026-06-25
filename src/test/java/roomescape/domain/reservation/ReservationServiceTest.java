@@ -48,11 +48,15 @@ class ReservationServiceTest {
         ReservationDateRepository dateRepository = mock(ReservationDateRepository.class);
         ReservationTimeRepository timeRepository = mock(ReservationTimeRepository.class);
         ThemeRepository themeRepository = mock(ThemeRepository.class);
+        ReservationSlotRepository slotRepository = mock(ReservationSlotRepository.class);
         WaitingReservationRepository waitingRepository = mock(WaitingReservationRepository.class);
 
         ReservationDate date = ReservationDate.of(1L, LocalDate.of(2026, 7, 1));
         ReservationTime time = ReservationTime.of(2L, LocalTime.of(10, 0));
         Theme theme = Theme.of(3L, "공포", "설명", "/themes/scary");
+        ReservationSlot slot = ReservationSlot.of(
+            100L, date, time, theme, ReservationSlotStatus.OPEN, 30_000L
+        );
         member = Member.of(
             10L,
             "user",
@@ -66,11 +70,12 @@ class ReservationServiceTest {
         when(dateRepository.findById(1L)).thenReturn(Optional.of(date));
         when(timeRepository.findById(2L)).thenReturn(Optional.of(time));
         when(themeRepository.findById(3L)).thenReturn(Optional.of(theme));
+        when(slotRepository.findByDateIdAndTimeIdAndThemeId(1L, 2L, 3L)).thenReturn(Optional.of(slot));
         when(reservationRepository.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         reservationService = new ReservationService(
             reservationRepository,
-            new ReservationSlotResolver(dateRepository, timeRepository, themeRepository),
+            new ReservationSlotResolver(dateRepository, timeRepository, themeRepository, slotRepository),
             waitingRepository,
             memberRepository,
             CLOCK
@@ -89,7 +94,7 @@ class ReservationServiceTest {
 
     @Test
     void 활성_예약이_있는_슬롯에는_예약할_수_없다() {
-        when(reservationRepository.existsByDateIdAndTimeIdAndThemeIdAndActiveSlotTrue(1L, 2L, 3L))
+        when(reservationRepository.existsBySlotIdAndActiveSlotTrue(100L))
             .thenReturn(true);
 
         assertThatThrownBy(
@@ -103,9 +108,14 @@ class ReservationServiceTest {
             1L,
             member.getName(),
             member,
-            ReservationDate.of(1L, LocalDate.of(2026, 7, 1)),
-            ReservationTime.of(2L, LocalTime.of(10, 0)),
-            Theme.of(3L, "공포", "설명", "/themes/scary"),
+            ReservationSlot.of(
+                100L,
+                ReservationDate.of(1L, LocalDate.of(2026, 7, 1)),
+                ReservationTime.of(2L, LocalTime.of(10, 0)),
+                Theme.of(3L, "공포", "설명", "/themes/scary"),
+                ReservationSlotStatus.OPEN,
+                30_000L
+            ),
             ReservationStatus.CONFIRMED,
             LocalDateTime.now(CLOCK),
             null

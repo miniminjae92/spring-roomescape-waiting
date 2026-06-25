@@ -9,10 +9,11 @@ import org.springframework.data.repository.query.Param;
 public interface ThemeRepository extends JpaRepository<Theme, Long> {
 
     @Query(value = """
-            select th.id, th.name, th.content, th.url
+            select th.id, th.name, th.content, th.url, th.price
             from theme th
-            join reservation r on th.id = r.theme_id
-            join reservation_date rd on r.date_id = rd.id
+            join reservation_slot rs on th.id = rs.theme_id
+            join reservation r on rs.id = r.slot_id
+            join reservation_date rd on rs.date_id = rd.id
             where rd.play_day between :startDay and :endDay
             group by th.id
             order by count(r.id) desc, th.id asc

@@ -50,7 +50,7 @@ class ThemeServiceTest {
     void deleteInUseTheme() {
         Theme theme = Theme.of(1L, "테마", "설명", "url");
         when(themeRepository.findById(theme.getId())).thenReturn(Optional.of(theme));
-        when(reservationRepository.countByThemeId(theme.getId())).thenReturn(1);
+        when(reservationRepository.countBySlotThemeId(theme.getId())).thenReturn(1);
 
         assertThatThrownBy(() -> themeService.deleteTheme(theme.getId()))
             .isInstanceOf(RoomescapeException.class);

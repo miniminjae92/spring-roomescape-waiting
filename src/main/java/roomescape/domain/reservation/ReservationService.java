@@ -43,9 +43,7 @@ public class ReservationService {
         Reservation reservation = Reservation.createWithoutId(
                 member.getName(),
                 member,
-                slot.date(),
-                slot.time(),
-                slot.theme(),
+                slot,
                 LocalDateTime.now(clock)
         );
         Reservation savedReservation = saveReservation(reservation);
@@ -101,7 +99,7 @@ public class ReservationService {
 
         validateReservableDate(newSlot);
         validateNotDuplicated(newSlot);
-        reservation.changeSlot(newSlot.date(), newSlot.time());
+        reservation.changeSlot(newSlot);
         reservationRepository.flush();
         promoteOldestWaiting(currentSlot);
         return ReservationResponse.from(reservation);
@@ -109,9 +107,7 @@ public class ReservationService {
 
     private void promoteOldestWaiting(ReservationSlot slot) {
         Optional<WaitingReservation> waitingReservationOpt = waitingReservationRepository.findOldestBySlot(
-                slot.dateId(),
-                slot.timeId(),
-                slot.themeId()
+                slot.getId()
         );
         if (waitingReservationOpt.isEmpty()) {
             return;
@@ -121,9 +117,7 @@ public class ReservationService {
         reservationRepository.save(Reservation.createWithoutId(
                 waitingReservation.getName(),
                 waitingReservation.getMember(),
-                waitingReservation.getDate(),
-                waitingReservation.getTime(),
-                waitingReservation.getTheme(),
+                waitingReservation.getSlot(),
                 LocalDateTime.now(clock)
         ));
         waitingReservation.convert();
@@ -135,11 +129,7 @@ public class ReservationService {
     }
 
     private void validateNotDuplicated(ReservationSlot slot) {
-        if (reservationRepository.existsByDateIdAndTimeIdAndThemeIdAndActiveSlotTrue(
-            slot.dateId(),
-            slot.timeId(),
-            slot.themeId()
-        )) {
+        if (reservationRepository.existsBySlotIdAndActiveSlotTrue(slot.getId())) {
             throw new RoomescapeException(ReservationErrorCode.RESERVATION_DUPLICATED);
         }
     }

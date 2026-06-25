@@ -45,9 +45,7 @@ public class WaitingReservationService {
         WaitingReservation waitingReservation = WaitingReservation.createWithoutId(
             member.getName(),
             member,
-            slot.date(),
-            slot.time(),
-            slot.theme(),
+            slot,
             LocalDateTime.now(clock)
         );
         WaitingReservation savedWaitingReservation = saveWaitingReservation(waitingReservation);
@@ -55,11 +53,9 @@ public class WaitingReservationService {
     }
 
     private void validateDuplicationOfWaitingReservation(Long memberId, ReservationSlot slot) {
-        if (waitingReservationRepository.existsByMemberIdAndDateIdAndTimeIdAndThemeIdAndStatus(
+        if (waitingReservationRepository.existsByMemberIdAndSlotIdAndStatus(
             memberId,
-            slot.dateId(),
-            slot.timeId(),
-            slot.themeId(),
+            slot.getId(),
             WaitingReservationStatus.WAITING
         )) {
             throw new RoomescapeException(WaitingReservationErrorCode.DUPLICATE_WAITING_RESERVATION);
@@ -67,11 +63,7 @@ public class WaitingReservationService {
     }
 
     private void validateSlotIsReserved(ReservationSlot slot) {
-        boolean reserved = reservationRepository.existsByDateIdAndTimeIdAndThemeIdAndActiveSlotTrue(
-            slot.dateId(),
-            slot.timeId(),
-            slot.themeId()
-        );
+        boolean reserved = reservationRepository.existsBySlotIdAndActiveSlotTrue(slot.getId());
         if (!reserved) {
             throw new RoomescapeException(WaitingReservationErrorCode.AVAILABLE_SLOT_NOT_WAITABLE);
         }

@@ -87,7 +87,7 @@ class ReservationTimeServiceTest {
     void deleteInUseTime() {
         ReservationTime time = ReservationTime.of(1L, LocalTime.of(10, 0));
         when(reservationTimeRepository.findById(time.getId())).thenReturn(Optional.of(time));
-        when(reservationRepository.countByTimeId(time.getId())).thenReturn(1);
+        when(reservationRepository.countBySlotTimeId(time.getId())).thenReturn(1);
 
         assertThatThrownBy(() -> reservationTimeService.deleteReservationTime(time.getId()))
             .isInstanceOf(RoomescapeException.class);

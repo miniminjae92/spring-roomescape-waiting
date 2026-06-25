@@ -1,6 +1,7 @@
 package roomescape.domain.theme.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Positive;
 import roomescape.domain.theme.Theme;
 
 public record ThemeCreationRequest(
@@ -11,14 +12,22 @@ public record ThemeCreationRequest(
     String content,
 
     @NotBlank(message = "테마 포스터 url은 필수입니다")
-    String url
+    String url,
+
+    @Positive(message = "테마 가격은 0원보다 커야 합니다")
+    Long price
 ) {
+
+    public ThemeCreationRequest(String name, String content, String url) {
+        this(name, content, url, 30_000L);
+    }
 
     public Theme toEntity() {
         return Theme.createWithoutId(
             name,
             content,
-            url
+            url,
+            price == null ? 30_000L : price
         );
     }
 }

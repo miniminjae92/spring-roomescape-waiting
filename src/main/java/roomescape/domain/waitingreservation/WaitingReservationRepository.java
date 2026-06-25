@@ -12,47 +12,33 @@ import roomescape.domain.waitingreservation.dto.WaitingReservationWithRank;
 
 public interface WaitingReservationRepository extends JpaRepository<WaitingReservation, Long> {
 
-    boolean existsByMemberIdAndDateIdAndTimeIdAndThemeIdAndStatus(
+    boolean existsByMemberIdAndSlotIdAndStatus(
         Long memberId,
-        Long dateId,
-        Long timeId,
-        Long themeId,
+        Long slotId,
         WaitingReservationStatus status
     );
 
-    @EntityGraph(attributePaths = {"date", "time", "theme"})
-    Optional<WaitingReservation> findFirstByDateIdAndTimeIdAndThemeIdOrderByCreatedAtAscIdAsc(
-            Long dateId,
-            Long timeId,
-            Long themeId
-    );
-
-    Optional<WaitingReservation> findFirstByDateIdAndTimeIdAndThemeIdAndStatusOrderByCreatedAtAscIdAsc(
-        Long dateId,
-        Long timeId,
-        Long themeId,
+    @EntityGraph(attributePaths = {"slot", "slot.date", "slot.time", "slot.theme"})
+    Optional<WaitingReservation> findFirstBySlotIdAndStatusOrderByCreatedAtAscIdAsc(
+        Long slotId,
         WaitingReservationStatus status
     );
 
-    default Optional<WaitingReservation> findOldestBySlot(long dateId, long timeId, long themeId) {
-        return findFirstByDateIdAndTimeIdAndThemeIdAndStatusOrderByCreatedAtAscIdAsc(
-            dateId,
-            timeId,
-            themeId,
+    default Optional<WaitingReservation> findOldestBySlot(long slotId) {
+        return findFirstBySlotIdAndStatusOrderByCreatedAtAscIdAsc(
+            slotId,
             WaitingReservationStatus.WAITING
         );
     }
 
-    @EntityGraph(attributePaths = {"date", "time", "theme"})
+    @EntityGraph(attributePaths = {"slot", "slot.date", "slot.time", "slot.theme"})
     @Query("""
             select new roomescape.domain.waitingreservation.dto.WaitingReservationWithRank(
                 w,
                 (
                     select count(w2) + 1
                     from WaitingReservation w2
-                    where w2.date = w.date
-                      and w2.time = w.time
-                      and w2.theme = w.theme
+                    where w2.slot = w.slot
                       and (
                         w2.createdAt < w.createdAt
                         or (w2.createdAt = w.createdAt and w2.id < w.id)
@@ -61,20 +47,18 @@ public interface WaitingReservationRepository extends JpaRepository<WaitingReser
             )
             from WaitingReservation w
             where w.name = :name
-            order by w.date.playDay, w.time.startAt, w.id
+            order by w.slot.date.playDay, w.slot.time.startAt, w.id
             """)
     List<WaitingReservationWithRank> findAllByNameWithRank(@Param("name") String name);
 
-    @EntityGraph(attributePaths = {"date", "time", "theme"})
+    @EntityGraph(attributePaths = {"slot", "slot.date", "slot.time", "slot.theme"})
     @Query("""
             select new roomescape.domain.waitingreservation.dto.WaitingReservationWithRank(
                 w,
                 (
                     select count(w2) + 1
                     from WaitingReservation w2
-                    where w2.date = w.date
-                      and w2.time = w.time
-                      and w2.theme = w.theme
+                    where w2.slot = w.slot
                       and (
                         w2.createdAt < w.createdAt
                         or (w2.createdAt = w.createdAt and w2.id < w.id)
@@ -83,9 +67,9 @@ public interface WaitingReservationRepository extends JpaRepository<WaitingReser
             )
             from WaitingReservation w
             where w.name = :name
-              and (w.date.playDay > :currentDate
-                or (w.date.playDay = :currentDate and w.time.startAt > :currentTime))
-            order by w.date.playDay, w.time.startAt, w.id
+              and (w.slot.date.playDay > :currentDate
+                or (w.slot.date.playDay = :currentDate and w.slot.time.startAt > :currentTime))
+            order by w.slot.date.playDay, w.slot.time.startAt, w.id
             """)
     List<WaitingReservationWithRank> findUpcomingByNameWithRank(
         @Param("name")
@@ -96,16 +80,14 @@ public interface WaitingReservationRepository extends JpaRepository<WaitingReser
         LocalTime currentTime
     );
 
-    @EntityGraph(attributePaths = {"date", "time", "theme", "member"})
+    @EntityGraph(attributePaths = {"slot", "slot.date", "slot.time", "slot.theme", "member"})
     @Query("""
             select new roomescape.domain.waitingreservation.dto.WaitingReservationWithRank(
                 w,
                 (
                     select count(w2) + 1
                     from WaitingReservation w2
-                    where w2.date = w.date
-                      and w2.time = w.time
-                      and w2.theme = w.theme
+                    where w2.slot = w.slot
                       and w2.status = roomescape.domain.waitingreservation.WaitingReservationStatus.WAITING
                       and (
                         w2.createdAt < w.createdAt
@@ -116,9 +98,9 @@ public interface WaitingReservationRepository extends JpaRepository<WaitingReser
             from WaitingReservation w
             where w.member.id = :memberId
               and w.status = roomescape.domain.waitingreservation.WaitingReservationStatus.WAITING
-              and (w.date.playDay > :currentDate
-                or (w.date.playDay = :currentDate and w.time.startAt > :currentTime))
-            order by w.date.playDay, w.time.startAt, w.id
+              and (w.slot.date.playDay > :currentDate
+                or (w.slot.date.playDay = :currentDate and w.slot.time.startAt > :currentTime))
+            order by w.slot.date.playDay, w.slot.time.startAt, w.id
             """)
     List<WaitingReservationWithRank> findUpcomingByMemberIdWithRank(
         @Param("memberId") Long memberId,

@@ -42,6 +42,9 @@ class JpaPersistenceContextObservationTest {
     private MemberRepository memberRepository;
 
     @Autowired
+    private ReservationSlotRepository slotRepository;
+
+    @Autowired
     private EntityManager entityManager;
 
     @Autowired
@@ -71,7 +74,13 @@ class JpaPersistenceContextObservationTest {
             // 관찰 포인트:
             // - 아래 코드는 reservationRepository.save(reservation)를 호출하지 않는다.
             // - 그런데 flush 시점에 reservation의 date_id, time_id 변경을 감지해 UPDATE가 발생하는지 콘솔을 본다.
-            reservation.changeSlot(newDate, newTime);
+            ReservationSlot newSlot = slotRepository.save(ReservationSlot.createWithoutId(
+                newDate,
+                newTime,
+                reservation.getTheme(),
+                reservation.getTheme().getPrice()
+            ));
+            reservation.changeSlot(newSlot);
 
             System.out.println("\n[dirty checking] flush 직전에 UPDATE SQL이 아직 보이지 않는지 확인");
             reservationRepository.flush();
@@ -111,14 +120,15 @@ class JpaPersistenceContextObservationTest {
             Member member = memberRepository.save(
                 Member.createUser("write-behind", "encoded", "write-behind", LocalDateTime.now())
             );
+            ReservationSlot slot = slotRepository.save(
+                ReservationSlot.createWithoutId(date, time, theme, theme.getPrice())
+            );
 
             System.out.println("\n[write-behind] Reservation save 호출 직전");
             reservationRepository.save(Reservation.createWithoutId(
                 member.getName(),
                 member,
-                date,
-                time,
-                theme,
+                slot,
                 LocalDateTime.now()
             ));
             System.out.println("[write-behind] Reservation save 호출 직후");
@@ -148,7 +158,13 @@ class JpaPersistenceContextObservationTest {
                     ReservationTime.createWithoutId(LocalTime.of(18, 0))
             );
 
-            reservation.changeSlot(newDate, newTime);
+            ReservationSlot newSlot = slotRepository.save(ReservationSlot.createWithoutId(
+                newDate,
+                newTime,
+                reservation.getTheme(),
+                reservation.getTheme().getPrice()
+            ));
+            reservation.changeSlot(newSlot);
 
             System.out.println("\n[flush before JPQL] JPQL 실행 직전");
             entityManager.createQuery("select r from Reservation r", Reservation.class)
@@ -214,12 +230,13 @@ class JpaPersistenceContextObservationTest {
                 name,
                 LocalDateTime.now()
             ));
+            ReservationSlot slot = slotRepository.save(
+                ReservationSlot.createWithoutId(date, time, theme, theme.getPrice())
+            );
             Reservation reservation = reservationRepository.save(Reservation.createWithoutId(
                 member.getName(),
                 member,
-                date,
-                time,
-                theme,
+                slot,
                 LocalDateTime.now()
             ));
             return reservation.getId();

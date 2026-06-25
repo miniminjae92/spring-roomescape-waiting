@@ -10,30 +10,30 @@ import org.springframework.data.repository.query.Param;
 
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
 
-    int countByTimeId(Long timeId);
+    int countBySlotTimeId(Long timeId);
 
-    int countByDateId(Long dateId);
+    int countBySlotDateId(Long dateId);
 
-    List<Reservation> findByThemeIdAndDateId(Long themeId, Long dateId);
+    List<Reservation> findBySlotThemeIdAndSlotDateId(Long themeId, Long dateId);
 
     default List<Long> findReservedTimes(Long themeId, Long dateId) {
-        return findByThemeIdAndDateId(themeId, dateId).stream()
+        return findBySlotThemeIdAndSlotDateId(themeId, dateId).stream()
                 .map(reservation -> reservation.getTime().getId())
                 .toList();
     }
 
-    int countByThemeId(Long id);
+    int countBySlotThemeId(Long id);
 
     List<Reservation> findByName(String name);
 
-    @EntityGraph(attributePaths = {"date", "time", "theme"})
+    @EntityGraph(attributePaths = {"slot", "slot.date", "slot.time", "slot.theme"})
     @Query("""
             select r
             from Reservation r
             where r.name = :name
-              and (r.date.playDay > :currentDate
-                or (r.date.playDay = :currentDate and r.time.startAt > :currentTime))
-            order by r.date.playDay, r.time.startAt
+              and (r.slot.date.playDay > :currentDate
+                or (r.slot.date.playDay = :currentDate and r.slot.time.startAt > :currentTime))
+            order by r.slot.date.playDay, r.slot.time.startAt
             """)
     List<Reservation> findUpcomingByName(
             @Param("name") String name,
@@ -41,14 +41,14 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             @Param("currentTime") LocalTime currentTime
     );
 
-    @EntityGraph(attributePaths = {"date", "time", "theme", "member"})
+    @EntityGraph(attributePaths = {"slot", "slot.date", "slot.time", "slot.theme", "member"})
     @Query("""
             select r
             from Reservation r
             where r.member.id = :memberId
-              and (r.date.playDay > :currentDate
-                or (r.date.playDay = :currentDate and r.time.startAt > :currentTime))
-            order by r.date.playDay, r.time.startAt
+              and (r.slot.date.playDay > :currentDate
+                or (r.slot.date.playDay = :currentDate and r.slot.time.startAt > :currentTime))
+            order by r.slot.date.playDay, r.slot.time.startAt
             """)
     List<Reservation> findUpcomingByMemberId(
         @Param("memberId") Long memberId,
@@ -56,5 +56,5 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
         @Param("currentTime") LocalTime currentTime
     );
 
-    boolean existsByDateIdAndTimeIdAndThemeIdAndActiveSlotTrue(Long dateId, Long timeId, Long themeId);
+    boolean existsBySlotIdAndActiveSlotTrue(Long slotId);
 }

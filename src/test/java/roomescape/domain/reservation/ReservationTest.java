@@ -64,12 +64,18 @@ class ReservationTest {
             MemberRole.USER,
             CREATED_AT
         );
-        return Reservation.createWithoutId(
-            member.getName(),
-            member,
+        ReservationSlot slot = ReservationSlot.of(
+            1L,
             ReservationDate.createWithoutId(LocalDate.of(2026, 7, 1)),
             ReservationTime.createWithoutId(LocalTime.of(10, 0)),
             Theme.createWithoutId("공포", "설명", "/themes/scary"),
+            ReservationSlotStatus.OPEN,
+            30_000L
+        );
+        return Reservation.createWithoutId(
+            member.getName(),
+            member,
+            slot,
             CREATED_AT
         );
     }

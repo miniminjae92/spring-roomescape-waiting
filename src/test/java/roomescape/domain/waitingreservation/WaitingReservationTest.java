@@ -9,6 +9,8 @@ import java.time.LocalTime;
 import org.junit.jupiter.api.Test;
 import roomescape.domain.member.Member;
 import roomescape.domain.member.MemberRole;
+import roomescape.domain.reservation.ReservationSlot;
+import roomescape.domain.reservation.ReservationSlotStatus;
 import roomescape.domain.reservationdate.ReservationDate;
 import roomescape.domain.reservationtime.ReservationTime;
 import roomescape.domain.theme.Theme;
@@ -49,12 +51,18 @@ class WaitingReservationTest {
 
     private WaitingReservation waitingReservation() {
         Member member = Member.of(1L, "user", "encoded", "고래", MemberRole.USER, CREATED_AT);
-        return WaitingReservation.createWithoutId(
-            member.getName(),
-            member,
+        ReservationSlot slot = ReservationSlot.of(
+            1L,
             ReservationDate.createWithoutId(LocalDate.of(2026, 7, 1)),
             ReservationTime.createWithoutId(LocalTime.of(10, 0)),
             Theme.createWithoutId("공포", "설명", "/themes/scary"),
+            ReservationSlotStatus.OPEN,
+            30_000L
+        );
+        return WaitingReservation.createWithoutId(
+            member.getName(),
+            member,
+            slot,
             CREATED_AT
         );
     }

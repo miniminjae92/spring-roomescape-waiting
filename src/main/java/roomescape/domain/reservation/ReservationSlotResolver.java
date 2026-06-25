@@ -9,6 +9,7 @@ import roomescape.domain.reservationtime.ReservationTimeRepository;
 import roomescape.domain.theme.Theme;
 import roomescape.domain.theme.ThemeRepository;
 import roomescape.support.exception.ReservationDateErrorCode;
+import roomescape.support.exception.ReservationErrorCode;
 import roomescape.support.exception.ReservationTimeErrorCode;
 import roomescape.support.exception.RoomescapeException;
 import roomescape.support.exception.ThemeErrorCode;
@@ -20,16 +21,15 @@ public class ReservationSlotResolver {
     private final ReservationDateRepository reservationDateRepository;
     private final ReservationTimeRepository reservationTimeRepository;
     private final ThemeRepository themeRepository;
+    private final ReservationSlotRepository reservationSlotRepository;
 
     public ReservationSlot resolve(Long dateId, Long timeId, Long themeId) {
-        Theme theme = getTheme(themeId);
-        return resolveWithTheme(dateId, timeId, theme);
+        return reservationSlotRepository.findByDateIdAndTimeIdAndThemeId(dateId, timeId, themeId)
+            .orElseThrow(() -> new RoomescapeException(ReservationErrorCode.RESERVATION_SLOT_NOT_FOUND));
     }
 
     public ReservationSlot resolveWithTheme(Long dateId, Long timeId, Theme theme) {
-        ReservationDate date = getReservationDate(dateId);
-        ReservationTime time = getReservationTime(timeId);
-        return ReservationSlot.of(date, time, theme);
+        return resolve(dateId, timeId, theme.getId());
     }
 
     private ReservationDate getReservationDate(Long id) {

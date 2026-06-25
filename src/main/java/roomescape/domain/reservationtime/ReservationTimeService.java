@@ -43,7 +43,7 @@ public class ReservationTimeService {
     public void deleteReservationTime(Long id) {
         ReservationTime reservationTime = reservationTimeRepository.findById(id)
                 .orElseThrow(() -> new RoomescapeException(ReservationTimeErrorCode.RESERVATION_TIME_NOT_EXIST));
-        if (reservationRepository.countByTimeId(id) > 0) {
+        if (reservationRepository.countBySlotTimeId(id) > 0) {
             throw new RoomescapeException(ReservationTimeErrorCode.RESERVATION_TIME_IN_USE);
         }
         reservationTimeRepository.delete(reservationTime);

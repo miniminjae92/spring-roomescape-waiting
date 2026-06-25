@@ -17,6 +17,8 @@ public enum ThemeErrorCode implements ErrorCode {
         "테마 설명 데이터가 유효하지 않습니다.", "content 필드의 유효성 제약 조건을 확인하십시오."),
     INVALID_THEME_URL(HttpStatus.BAD_REQUEST,
         "테마 포스터 URL 데이터가 유효하지 않거나 형식이 올바르지 않습니다.", "url 필드의 형식 및 도메인 유효성을 확인하십시오."),
+    INVALID_THEME_PRICE(HttpStatus.BAD_REQUEST,
+        "테마 기본 가격은 0원보다 커야 합니다.", "price 필드의 값을 확인하십시오."),
     ;
 
     private final HttpStatus httpStatus;

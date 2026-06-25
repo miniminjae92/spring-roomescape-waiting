@@ -40,10 +40,14 @@ class ReservationServiceIntegrationTest {
     @Autowired
     private ThemeRepository themeRepository;
 
+    @Autowired
+    private ReservationSlotRepository slotRepository;
+
     private Member member;
     private ReservationDate date;
     private ReservationTime time;
     private Theme theme;
+    private ReservationSlot slot;
 
     @BeforeEach
     void setUp() {
@@ -56,6 +60,7 @@ class ReservationServiceIntegrationTest {
         date = dateRepository.save(ReservationDate.createWithoutId(LocalDate.now().plusDays(2)));
         time = timeRepository.save(ReservationTime.createWithoutId(LocalTime.of(10, 0)));
         theme = themeRepository.save(Theme.createWithoutId("공포", "설명", "/themes/scary"));
+        slot = slotRepository.save(ReservationSlot.createWithoutId(date, time, theme, theme.getPrice()));
     }
 
     @Test
@@ -83,9 +88,7 @@ class ReservationServiceIntegrationTest {
         return Reservation.createWithoutId(
             member.getName(),
             member,
-            date,
-            time,
-            theme,
+            slot,
             LocalDateTime.now()
         );
     }

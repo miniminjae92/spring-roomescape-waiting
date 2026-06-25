@@ -37,7 +37,7 @@ public class ReservationDateService {
 
     public void deleteReservationDate(Long id) {
         ReservationDate reservationDate = findById(id);
-        if (reservationRepository.countByDateId(id) > 0) {
+        if (reservationRepository.countBySlotDateId(id) > 0) {
             throw new RoomescapeException(ReservationDateErrorCode.RESERVATION_DATE_IN_USE);
         }
         reservationDateRepository.delete(reservationDate);

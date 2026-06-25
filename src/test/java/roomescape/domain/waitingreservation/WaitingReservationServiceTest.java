@@ -21,6 +21,9 @@ import roomescape.domain.member.MemberRepository;
 import roomescape.domain.member.MemberRole;
 import roomescape.domain.reservation.ReservationRepository;
 import roomescape.domain.reservation.ReservationSlotResolver;
+import roomescape.domain.reservation.ReservationSlot;
+import roomescape.domain.reservation.ReservationSlotRepository;
+import roomescape.domain.reservation.ReservationSlotStatus;
 import roomescape.domain.reservationdate.ReservationDate;
 import roomescape.domain.reservationdate.ReservationDateRepository;
 import roomescape.domain.reservationtime.ReservationTime;
@@ -50,6 +53,7 @@ class WaitingReservationServiceTest {
         ReservationDateRepository dateRepository = mock(ReservationDateRepository.class);
         ReservationTimeRepository timeRepository = mock(ReservationTimeRepository.class);
         ThemeRepository themeRepository = mock(ThemeRepository.class);
+        ReservationSlotRepository slotRepository = mock(ReservationSlotRepository.class);
 
         member = Member.of(
             10L,
@@ -62,19 +66,23 @@ class WaitingReservationServiceTest {
         ReservationDate date = ReservationDate.of(1L, LocalDate.of(2026, 7, 1));
         ReservationTime time = ReservationTime.of(2L, LocalTime.of(10, 0));
         Theme theme = Theme.of(3L, "공포", "설명", "/themes/scary");
+        ReservationSlot slot = ReservationSlot.of(
+            100L, date, time, theme, ReservationSlotStatus.OPEN, 30_000L
+        );
 
         when(memberRepository.findById(10L)).thenReturn(Optional.of(member));
         when(dateRepository.findById(1L)).thenReturn(Optional.of(date));
         when(timeRepository.findById(2L)).thenReturn(Optional.of(time));
         when(themeRepository.findById(3L)).thenReturn(Optional.of(theme));
-        when(reservationRepository.existsByDateIdAndTimeIdAndThemeIdAndActiveSlotTrue(1L, 2L, 3L))
+        when(slotRepository.findByDateIdAndTimeIdAndThemeId(1L, 2L, 3L)).thenReturn(Optional.of(slot));
+        when(reservationRepository.existsBySlotIdAndActiveSlotTrue(100L))
             .thenReturn(true);
         when(waitingRepository.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         waitingService = new WaitingReservationService(
             waitingRepository,
             reservationRepository,
-            new ReservationSlotResolver(dateRepository, timeRepository, themeRepository),
+            new ReservationSlotResolver(dateRepository, timeRepository, themeRepository, slotRepository),
             memberRepository,
             CLOCK
         );
@@ -92,11 +100,9 @@ class WaitingReservationServiceTest {
 
     @Test
     void 같은_회원은_같은_슬롯에_중복_대기할_수_없다() {
-        when(waitingRepository.existsByMemberIdAndDateIdAndTimeIdAndThemeIdAndStatus(
+        when(waitingRepository.existsByMemberIdAndSlotIdAndStatus(
             10L,
-            1L,
-            2L,
-            3L,
+            100L,
             WaitingReservationStatus.WAITING
         )).thenReturn(true);
 
@@ -111,9 +117,14 @@ class WaitingReservationServiceTest {
             1L,
             member.getName(),
             member,
-            ReservationDate.of(1L, LocalDate.of(2026, 7, 1)),
-            ReservationTime.of(2L, LocalTime.of(10, 0)),
-            Theme.of(3L, "공포", "설명", "/themes/scary"),
+            ReservationSlot.of(
+                100L,
+                ReservationDate.of(1L, LocalDate.of(2026, 7, 1)),
+                ReservationTime.of(2L, LocalTime.of(10, 0)),
+                Theme.of(3L, "공포", "설명", "/themes/scary"),
+                ReservationSlotStatus.OPEN,
+                30_000L
+            ),
             LocalDateTime.now(CLOCK),
             null,
             WaitingReservationStatus.WAITING
