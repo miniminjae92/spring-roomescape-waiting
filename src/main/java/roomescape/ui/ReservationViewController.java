@@ -11,6 +11,11 @@ public class ReservationViewController {
         return "times";
     }
 
+    @GetMapping("/login")
+    public String login() {
+        return "auth";
+    }
+
     @GetMapping("/admin")
     public String admin() {
         return "admin";

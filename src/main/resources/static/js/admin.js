@@ -1,9 +1,4 @@
 document.addEventListener("DOMContentLoaded", () => {
-    const TOKEN_KEY = "roomescape-admin-token";
-    const state = {
-        token: localStorage.getItem(TOKEN_KEY) || ""
-    };
-
     const themesList = document.getElementById("themes-list");
     const datesList = document.getElementById("dates-list");
     const timesList = document.getElementById("times-list");
@@ -11,12 +6,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const themeForm = document.getElementById("theme-form");
     const dateForm = document.getElementById("date-form");
     const timeForm = document.getElementById("time-form");
+    const slotForm = document.getElementById("slot-form");
     const panels = document.querySelectorAll(".admin-panel");
     const tabButtons = document.querySelectorAll("[data-tab-target]");
     const refreshButtons = document.querySelectorAll("[data-refresh-target]");
     const adminModal = document.getElementById("admin-modal");
     const adminModalMessage = document.getElementById("admin-modal-message");
     const adminModalClosers = document.querySelectorAll("[data-admin-modal-close]");
+    const logoutButton = document.getElementById("admin-logout-button");
 
     const ERROR_MAP = {
         "INVALID_INPUT_VALUE": "입력하신 정보가 규정된 형식에 맞지 않습니다. 입력 규칙을 확인하고 다시 입력해 주세요.",
@@ -84,10 +81,10 @@ document.addEventListener("DOMContentLoaded", () => {
     function adminFetch(url, options = {}) {
         return fetch(url, {
             ...options,
+            credentials: "same-origin",
             headers: {
                 "Content-Type": "application/json",
                 "Accept": "application/json",
-                "X-ADMIN-TOKEN": state.token,
                 ...(options.headers || {})
             }
         });
@@ -120,6 +117,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         <h3 class="item-title">${theme.name}</h3>
                         <p class="item-subtext">${theme.content}</p>
                         <p class="item-subtext">${theme.url}</p>
+                        <p class="item-subtext">${Number(theme.price).toLocaleString()}원</p>
                     </div>
                 </div>
                 <div class="item-actions">
@@ -189,9 +187,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function refreshAll() {
-        if (!state.token) {
-            return;
-        }
         await Promise.all([loadThemes(), loadDates(), loadTimes(), loadReservations()]);
         bindDeleteButtons();
     }
@@ -216,7 +211,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 const response = await adminFetch(endpoint, { method: "DELETE" });
                 if (response.status === 401) {
-                    openModal("관리자 토큰이 올바르지 않습니다.");
+                    window.location.href = "/login?next=/admin";
+                    return;
+                }
+                if (response.status === 403) {
+                    openModal("관리자 권한이 없습니다.");
                     return;
                 }
                 if (!response.ok) {
@@ -270,7 +269,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const payload = {
             name: formData.get("name"),
             content: formData.get("content"),
-            url: formData.get("url")
+            url: formData.get("url"),
+            price: Number(formData.get("price"))
         };
 
         const response = await adminFetch("/admin/themes", {
@@ -329,13 +329,58 @@ document.addEventListener("DOMContentLoaded", () => {
         await refreshAll();
     });
 
-    if (state.token) {
-        refreshAll().catch((error) => {
-            alert(error.message);
-            window.location.href = "/";
+    slotForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const formData = new FormData(slotForm);
+        const rawPrice = formData.get("price");
+        const payload = {
+            dateId: Number(formData.get("dateId")),
+            timeId: Number(formData.get("timeId")),
+            themeId: Number(formData.get("themeId")),
+            price: rawPrice ? Number(rawPrice) : null
+        };
+        const response = await adminFetch("/admin/reservation-slots", {
+            method: "POST",
+            body: JSON.stringify(payload)
         });
-    } else {
-        alert("관리자 토큰이 필요합니다.");
-        window.location.href = "/";
+        const result = await parseResponse(response);
+        if (!response.ok) {
+            setMessage(
+                document.getElementById("slot-form-message"),
+                getFriendlyErrorMessage(result, "운영 회차 생성에 실패했습니다."),
+                "error"
+            );
+            return;
+        }
+        slotForm.reset();
+        setMessage(
+            document.getElementById("slot-form-message"),
+            `운영 회차 #${result.id}를 생성했습니다.`,
+            "success"
+        );
+    });
+
+    logoutButton.addEventListener("click", async () => {
+        await fetch("/auth/logout", {method: "POST", credentials: "same-origin"});
+        window.location.href = "/login";
+    });
+
+    async function initialize() {
+        const response = await fetch("/auth/me", {credentials: "same-origin"});
+        if (response.status === 401) {
+            window.location.href = "/login?next=/admin";
+            return;
+        }
+        const member = await response.json();
+        if (member.role !== "MANAGER") {
+            window.location.href = "/";
+            return;
+        }
+        await refreshAll();
     }
+
+    initialize().catch((error) => {
+        alert(error.message);
+        window.location.href = "/";
+    });
 });

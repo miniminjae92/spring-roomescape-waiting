@@ -17,7 +17,9 @@
             <button type="button" class="admin-nav-button active" data-tab-target="themes-panel">테마 관리</button>
             <button type="button" class="admin-nav-button" data-tab-target="dates-panel">예약 날짜 관리</button>
             <button type="button" class="admin-nav-button" data-tab-target="times-panel">예약 시간 관리</button>
+            <button type="button" class="admin-nav-button" data-tab-target="slots-panel">운영 회차 관리</button>
             <button type="button" class="admin-nav-button" data-tab-target="reservations-panel">예약 관리</button>
+            <button type="button" id="admin-logout-button" class="admin-nav-button">로그아웃</button>
         </nav>
     </div>
 </header>
@@ -52,6 +54,10 @@
                 <label>
                     <span>이미지 URL</span>
                     <input type="text" name="url" placeholder="dummy" required>
+                </label>
+                <label>
+                    <span>기본 가격</span>
+                    <input type="number" name="price" min="1" value="30000" required>
                 </label>
             </div>
             <div class="form-actions">
@@ -117,6 +123,28 @@
             <button type="button" class="secondary-button" data-refresh-target="reservations">새로고침</button>
         </div>
         <div id="reservations-list" class="simple-list"></div>
+    </section>
+
+    <section id="slots-panel" class="admin-panel" hidden>
+        <div class="panel-header">
+            <div>
+                <p class="admin-kicker">운영 회차 관리</p>
+                <h2>판매 회차 생성</h2>
+                <p class="admin-hero-description">등록된 날짜·시간·테마 ID를 조합해 실제 예약 가능한 회차를 만듭니다.</p>
+            </div>
+        </div>
+        <form id="slot-form" class="admin-form">
+            <div class="field-grid">
+                <label><span>날짜 ID</span><input type="number" name="dateId" min="1" required></label>
+                <label><span>시간 ID</span><input type="number" name="timeId" min="1" required></label>
+                <label><span>테마 ID</span><input type="number" name="themeId" min="1" required></label>
+                <label><span>회차 가격</span><input type="number" name="price" min="1" placeholder="미입력 시 테마 기본 가격"></label>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="primary-button">운영 회차 생성</button>
+                <p id="slot-form-message" class="form-message"></p>
+            </div>
+        </form>
     </section>
 </main>
 

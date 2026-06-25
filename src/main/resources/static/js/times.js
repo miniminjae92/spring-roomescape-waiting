@@ -1,4 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
+    let currentMember = null;
     const state = {
         themes: [],
         dates: [],
@@ -30,6 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const resetSelectionButton = document.getElementById("reset-selection-button");
     const statusStrip = document.getElementById("status-strip");
     const adminLoginButton = document.getElementById("admin-login-button");
+    const logoutButton = document.getElementById("logout-button");
 
     const ERROR_MAP = {
         "INVALID_INPUT_VALUE": "입력하신 정보가 규정된 형식에 맞지 않습니다. 입력 규칙을 확인하고 다시 입력해 주세요.",
@@ -91,14 +93,16 @@ document.addEventListener("DOMContentLoaded", () => {
         navMyReservation.classList.add("active");
         reservationView.hidden = true;
         myReservationView.hidden = false;
+        document.getElementById("search-form").dispatchEvent(new Event("submit"));
     });
 
     adminLoginButton.addEventListener("click", () => {
-        const token = window.prompt("관리자 토큰을 입력하세요.");
-        if (token) {
-            localStorage.setItem("roomescape-admin-token", token);
-            window.location.href = "/admin";
-        }
+        window.location.href = "/admin";
+    });
+
+    logoutButton.addEventListener("click", async () => {
+        await fetch("/auth/logout", {method: "POST"});
+        window.location.href = "/login";
     });
 
     modalTriggers.forEach((trigger) => {
@@ -271,7 +275,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const selectedDate = findDate();
 
         try {
-            state.times = await fetchJson(`/times?themeId=${state.selectedThemeId}&dateId=${state.selectedDateId}`);
+            state.times = await fetchJson(
+                `/reservation-slots?themeId=${state.selectedThemeId}&dateId=${state.selectedDateId}`
+            );
             renderTimes();
             selectedThemeInput.value = String(state.selectedThemeId);
             selectedDateInput.value = String(state.selectedDateId);
@@ -298,26 +304,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const reservationForm = document.getElementById("reservation-form");
     const message = document.getElementById("reservation-message");
 
-    const reservationNameInput = document.getElementById("reservation-name");
-    const searchNameInput = document.getElementById("search-name");
-
-    [reservationNameInput, searchNameInput].forEach(input => {
-        if (input) {
-            input.addEventListener("input", (e) => {
-                const value = e.target.value;
-                if (/\s/.test(value)) {
-                    e.target.value = value.replace(/\s/g, "");
-                }
-            });
-        }
-    });
-
     reservationForm.addEventListener("submit", async (event) => {
         event.preventDefault();
 
         const formData = new FormData(reservationForm);
         const payload = {
-            name: formData.get("name"),
             themeId: Number(formData.get("themeId")),
             dateId: Number(formData.get("dateId")),
             timeId: Number(formData.get("timeId"))
@@ -382,14 +373,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     searchForm.addEventListener("submit", async (event) => {
         event.preventDefault();
-        const name = document.getElementById("search-name").value;
         searchMessage.textContent = "";
         searchMessage.className = "form-message";
 
         try {
             const [reservations, waitingReservations] = await Promise.all([
-                fetchJson(`/reservations?name=${encodeURIComponent(name)}`),
-                fetchJson(`/waiting-reservations?name=${encodeURIComponent(name)}`)
+                fetchJson("/reservations"),
+                fetchJson("/waiting-reservations")
             ]);
 
             if (reservations.length === 0 && waitingReservations.length === 0) {
@@ -553,7 +543,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function loadUpdateTimes() {
         try {
-            const times = await fetchJson(`/times?themeId=${state.updateState.themeId}&dateId=${state.updateState.dateId}`);
+            const times = await fetchJson(
+                `/reservation-slots?themeId=${state.updateState.themeId}&dateId=${state.updateState.dateId}`
+            );
             updateTimeList.innerHTML = times.map((time) => `
                 <label class="time-card time-card-refined ${time.available ? "available" : "unavailable"}">
                     <input type="radio" name="updateTimeId" value="${time.timeId}" ${time.available ? "" : "disabled"} ${state.updateState.timeId === time.timeId ? "checked" : ""}>
@@ -609,7 +601,22 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    loadInitialData().catch((error) => {
+    async function initialize() {
+        const response = await fetch("/auth/me", {headers: {Accept: "application/json"}});
+        if (response.status === 401) {
+            window.location.href = `/login?next=${encodeURIComponent(window.location.pathname)}`;
+            return;
+        }
+        if (!response.ok) {
+            throw new Error("로그인 정보를 확인하지 못했습니다.");
+        }
+        currentMember = await response.json();
+        document.getElementById("reservation-member-name").textContent =
+            `${currentMember.name} 회원으로 예약합니다.`;
+        await loadInitialData();
+    }
+
+    initialize().catch((error) => {
         updateStatus(error.message);
     });
 });
