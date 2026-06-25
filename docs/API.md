@@ -177,11 +177,44 @@
 
 다음 API는 `MANAGER` 역할이 필요하다.
 
+- `/admin/members/**`
 - `/admin/themes/**`
 - `/admin/reservation-dates/**`
 - `/admin/times/**`
 - `/admin/reservation-slots/**`
 - `/admin/reservations/**`
+
+### `GET /admin/members`
+
+- 관리자 수동 예약에 사용할 일반 회원 목록을 이름순으로 조회
+
+### `POST /admin/reservations`
+
+```json
+{
+  "memberId": 2,
+  "dateId": 1,
+  "timeId": 2,
+  "themeId": 3
+}
+```
+
+- 선택한 회원 소유의 예약을 생성
+- 운영 회차 마감 및 중복 예약 규칙은 사용자 예약과 동일
+
+### `DELETE /admin/reservations/{id}`
+
+- 예약을 취소하고 해당 회차의 가장 오래된 대기자를 자동으로 예약 전환
+- 성공: `204 No Content`
+
+### `GET /admin/waiting-reservations`
+
+- 현재 `WAITING` 상태인 전체 예약 대기와 회차별 순위를 조회
+
+### `DELETE /admin/waiting-reservations/{id}`
+
+- 예약 대기를 `CANCELED` 상태로 변경하고 취소 시각을 기록
+- 성공: `204 No Content`
 
 개발용 계정:
 

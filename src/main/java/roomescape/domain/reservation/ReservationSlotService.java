@@ -1,5 +1,6 @@
 package roomescape.domain.reservation;
 
+import java.time.Clock;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -29,6 +30,7 @@ public class ReservationSlotService {
     private final ReservationDateRepository dateRepository;
     private final ReservationTimeRepository timeRepository;
     private final ThemeRepository themeRepository;
+    private final Clock clock;
 
     @Transactional
     public ReservationSlotResponse create(ReservationSlotCreationRequest request) {
@@ -55,6 +57,7 @@ public class ReservationSlotService {
             .map(slot -> ReservationSlotResponse.from(
                 slot,
                 slot.getStatus() == ReservationSlotStatus.OPEN
+                    && !slot.isClosedForReservation(clock)
                     && !reservationRepository.existsBySlotIdAndActiveSlotTrue(slot.getId())
             ))
             .toList();

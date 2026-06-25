@@ -51,7 +51,7 @@ public class ReservationService {
     }
 
     public List<ReservationResponse> getAllReservations() {
-        return reservationRepository.findAll().stream()
+        return reservationRepository.findAllByActiveSlotTrue().stream()
                 .map(ReservationResponse::from)
                 .toList();
     }
@@ -66,6 +66,8 @@ public class ReservationService {
     public void deleteReservation(Long id) {
         Reservation reservation = getReservation(id);
         cancel(reservation);
+        reservationRepository.flush();
+        promoteOldestWaiting(ReservationSlot.from(reservation));
     }
 
     @Transactional

@@ -38,6 +38,7 @@ class ReservationServiceTest {
 
     private ReservationRepository reservationRepository;
     private MemberRepository memberRepository;
+    private WaitingReservationRepository waitingRepository;
     private ReservationService reservationService;
     private Member member;
 
@@ -49,7 +50,7 @@ class ReservationServiceTest {
         ReservationTimeRepository timeRepository = mock(ReservationTimeRepository.class);
         ThemeRepository themeRepository = mock(ThemeRepository.class);
         ReservationSlotRepository slotRepository = mock(ReservationSlotRepository.class);
-        WaitingReservationRepository waitingRepository = mock(WaitingReservationRepository.class);
+        waitingRepository = mock(WaitingReservationRepository.class);
 
         ReservationDate date = ReservationDate.of(1L, LocalDate.of(2026, 7, 1));
         ReservationTime time = ReservationTime.of(2L, LocalTime.of(10, 0));
@@ -125,5 +126,55 @@ class ReservationServiceTest {
         assertThatThrownBy(() -> reservationService.cancelReservation(999L, 1L))
             .isInstanceOf(RoomescapeException.class);
         assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.CONFIRMED);
+    }
+
+    @Test
+    void 관리자가_예약을_취소하면_가장_오래된_대기자를_예약으로_전환한다() {
+        ReservationSlot slot = ReservationSlot.of(
+            100L,
+            ReservationDate.of(1L, LocalDate.of(2026, 7, 1)),
+            ReservationTime.of(2L, LocalTime.of(10, 0)),
+            Theme.of(3L, "공포", "설명", "/themes/scary"),
+            ReservationSlotStatus.OPEN,
+            30_000L
+        );
+        Reservation reservation = Reservation.of(
+            1L,
+            member.getName(),
+            member,
+            slot,
+            ReservationStatus.CONFIRMED,
+            LocalDateTime.now(CLOCK),
+            null
+        );
+        Member waitingMember = Member.of(
+            11L,
+            "waiting-user",
+            "encoded",
+            "포비",
+            MemberRole.USER,
+            LocalDateTime.now(CLOCK)
+        );
+        roomescape.domain.waitingreservation.WaitingReservation waitingReservation =
+            roomescape.domain.waitingreservation.WaitingReservation.createWithoutId(
+                waitingMember.getName(),
+                waitingMember,
+                slot,
+                LocalDateTime.now(CLOCK).minusMinutes(1)
+            );
+
+        when(reservationRepository.findById(1L)).thenReturn(Optional.of(reservation));
+        when(waitingRepository.findOldestBySlot(100L)).thenReturn(Optional.of(waitingReservation));
+
+        reservationService.deleteReservation(1L);
+
+        assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.CANCELED);
+        assertThat(waitingReservation.getStatus())
+            .isEqualTo(roomescape.domain.waitingreservation.WaitingReservationStatus.CONVERTED);
+        verify(reservationRepository).flush();
+        verify(reservationRepository).save(org.mockito.ArgumentMatchers.argThat(
+            promoted -> promoted.getMember().equals(waitingMember)
+                && promoted.getSlot().equals(slot)
+        ));
     }
 }

@@ -135,4 +135,30 @@ class WaitingReservationServiceTest {
             .isInstanceOf(RoomescapeException.class);
         assertThat(waiting.getStatus()).isEqualTo(WaitingReservationStatus.WAITING);
     }
+
+    @Test
+    void 관리자는_예약_대기를_취소할_수_있다() {
+        WaitingReservation waiting = WaitingReservation.of(
+            1L,
+            member.getName(),
+            member,
+            ReservationSlot.of(
+                100L,
+                ReservationDate.of(1L, LocalDate.of(2026, 7, 1)),
+                ReservationTime.of(2L, LocalTime.of(10, 0)),
+                Theme.of(3L, "공포", "설명", "/themes/scary"),
+                ReservationSlotStatus.OPEN,
+                30_000L
+            ),
+            LocalDateTime.now(CLOCK),
+            null,
+            WaitingReservationStatus.WAITING
+        );
+        when(waitingRepository.findById(1L)).thenReturn(Optional.of(waiting));
+
+        waitingService.cancelWaitingReservationByAdmin(1L);
+
+        assertThat(waiting.getStatus()).isEqualTo(WaitingReservationStatus.CANCELED);
+        assertThat(waiting.getCanceledAt()).isEqualTo(LocalDateTime.now(CLOCK));
+    }
 }

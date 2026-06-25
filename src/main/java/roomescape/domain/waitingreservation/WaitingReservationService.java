@@ -81,7 +81,12 @@ public class WaitingReservationService {
         if (!waitingReservation.isOwnedBy(memberId)) {
             throw new RoomescapeException(WaitingReservationErrorCode.WAITING_RESERVATION_ACCESS_DENIED);
         }
-        waitingReservation.cancel(LocalDateTime.now(clock));
+        cancel(waitingReservation);
+    }
+
+    @Transactional
+    public void cancelWaitingReservationByAdmin(Long id) {
+        cancel(getWaitingReservation(id));
     }
 
     public List<WaitingReservationWithRankResponse> getWaitingReservationsWithRankByMember(Long memberId) {
@@ -95,9 +100,19 @@ public class WaitingReservationService {
             .toList();
     }
 
+    public List<WaitingReservationWithRankResponse> getAllWaitingReservationsWithRank() {
+        return waitingReservationRepository.findAllWaitingWithRank().stream()
+            .map(WaitingReservationWithRankResponse::from)
+            .toList();
+    }
+
     private WaitingReservation getWaitingReservation(Long id) {
         return waitingReservationRepository.findById(id)
             .orElseThrow(() -> new RoomescapeException(WaitingReservationErrorCode.WAITING_RESERVATION_NOT_FOUND));
+    }
+
+    private void cancel(WaitingReservation waitingReservation) {
+        waitingReservation.cancel(LocalDateTime.now(clock));
     }
 
     private Member getMember(Long memberId) {

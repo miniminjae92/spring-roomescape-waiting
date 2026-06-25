@@ -31,6 +31,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             select r
             from Reservation r
             where r.name = :name
+              and r.activeSlot = true
               and (r.slot.date.playDay > :currentDate
                 or (r.slot.date.playDay = :currentDate and r.slot.time.startAt > :currentTime))
             order by r.slot.date.playDay, r.slot.time.startAt
@@ -46,6 +47,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             select r
             from Reservation r
             where r.member.id = :memberId
+              and r.activeSlot = true
               and (r.slot.date.playDay > :currentDate
                 or (r.slot.date.playDay = :currentDate and r.slot.time.startAt > :currentTime))
             order by r.slot.date.playDay, r.slot.time.startAt
@@ -57,4 +59,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     );
 
     boolean existsBySlotIdAndActiveSlotTrue(Long slotId);
+
+    @EntityGraph(attributePaths = {"slot", "slot.date", "slot.time", "slot.theme", "member"})
+    List<Reservation> findAllByActiveSlotTrue();
 }

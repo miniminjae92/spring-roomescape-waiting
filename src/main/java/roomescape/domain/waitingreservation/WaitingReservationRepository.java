@@ -31,6 +31,27 @@ public interface WaitingReservationRepository extends JpaRepository<WaitingReser
         );
     }
 
+    @EntityGraph(attributePaths = {"slot", "slot.date", "slot.time", "slot.theme", "member"})
+    @Query("""
+            select new roomescape.domain.waitingreservation.dto.WaitingReservationWithRank(
+                w,
+                (
+                    select count(w2) + 1
+                    from WaitingReservation w2
+                    where w2.slot = w.slot
+                      and w2.status = roomescape.domain.waitingreservation.WaitingReservationStatus.WAITING
+                      and (
+                        w2.createdAt < w.createdAt
+                        or (w2.createdAt = w.createdAt and w2.id < w.id)
+                      )
+                )
+            )
+            from WaitingReservation w
+            where w.status = roomescape.domain.waitingreservation.WaitingReservationStatus.WAITING
+            order by w.slot.date.playDay, w.slot.time.startAt, w.createdAt, w.id
+            """)
+    List<WaitingReservationWithRank> findAllWaitingWithRank();
+
     @EntityGraph(attributePaths = {"slot", "slot.date", "slot.time", "slot.theme"})
     @Query("""
             select new roomescape.domain.waitingreservation.dto.WaitingReservationWithRank(

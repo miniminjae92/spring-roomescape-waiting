@@ -5,6 +5,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -21,6 +22,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import roomescape.auth.LoginMember;
 import roomescape.auth.SessionManager;
 import roomescape.domain.member.MemberRole;
+import roomescape.domain.reservation.dto.ReservationCreationRequest;
+import roomescape.domain.reservation.dto.ReservationCreationResponse;
 import roomescape.domain.reservation.dto.ReservationResponse;
 import roomescape.support.exception.ReservationErrorCode;
 import roomescape.support.exception.RoomescapeException;
@@ -41,6 +44,39 @@ class AdminReservationControllerTest {
     void setUp() {
         when(sessionManager.findLoginMember(org.mockito.ArgumentMatchers.any()))
             .thenReturn(Optional.of(new LoginMember(1L, MemberRole.MANAGER)));
+    }
+
+    @Test
+    void 관리자가_선택한_회원의_예약을_생성한다() throws Exception {
+        when(reservationService.createReservation(
+            2L,
+            new ReservationCreationRequest(1L, 2L, 3L)
+        )).thenReturn(new ReservationCreationResponse(
+            10L,
+            "고래",
+            LocalDate.of(2026, 5, 10),
+            LocalTime.of(10, 0),
+            new ReservationCreationResponse.ThemePayload("공포", "테마 내용", "/themes/scary")
+        ));
+
+        mockMvc.perform(post("/admin/reservations")
+                .contentType("application/json")
+                .content("""
+                    {
+                      "memberId": 2,
+                      "dateId": 1,
+                      "timeId": 2,
+                      "themeId": 3
+                    }
+                    """))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.id").value(10))
+            .andExpect(jsonPath("$.name").value("고래"));
+
+        verify(reservationService).createReservation(
+            2L,
+            new ReservationCreationRequest(1L, 2L, 3L)
+        );
     }
 
     @Test
