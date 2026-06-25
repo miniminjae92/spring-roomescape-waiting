@@ -9,14 +9,22 @@ public enum WaitingReservationErrorCode implements ErrorCode {
         "예약자 성명 데이터가 유효하지 않습니다.", "요청 바디의 name 필드 유효성 제약 조건을 확인하십시오."),
     INVALID_CREATED_AT(HttpStatus.BAD_REQUEST,
         "생성 시간이 유효하지 않습니다.", "요청 바디의 createdAt 필드 유효성 제약 조건을 확인하십시오."),
+    INVALID_WAITING_RESERVATION(HttpStatus.BAD_REQUEST,
+        "예약 대기 회원 또는 상태가 유효하지 않습니다.", "로그인 회원과 예약 대기 상태를 확인하십시오."),
     AVAILABLE_SLOT_NOT_WAITABLE(HttpStatus.CONFLICT,
         "예약 가능한 시간에는 대기를 신청할 수 없습니다.", "예약된 날짜, 시간, 테마에만 대기를 신청하십시오."),
     WAITING_RESERVATION_DATE_NOT_ALLOWED(HttpStatus.BAD_REQUEST,
         "예약 시작 10분 전부터는 예약 대기를 신청할 수 없습니다.", "예약 시작 10분 전보다 이전에만 대기를 신청하십시오."),
     WAITING_RESERVATION_NOT_FOUND(HttpStatus.NOT_FOUND,
         "해당하는 예약 대기를 찾을 수 없습니다.", "요청한 예약 대기 ID의 유효성 및 DB 존재 여부를 확인하십시오."),
+    WAITING_RESERVATION_ACCESS_DENIED(HttpStatus.FORBIDDEN,
+        "다른 회원의 예약 대기에는 접근할 수 없습니다.", "로그인 계정과 예약 대기 소유자를 확인하십시오."),
+    WAITING_RESERVATION_CANNOT_CANCEL(HttpStatus.CONFLICT,
+        "현재 상태에서는 예약 대기를 취소할 수 없습니다.", "예약 대기 상태를 확인하십시오."),
+    WAITING_RESERVATION_CANNOT_CONVERT(HttpStatus.CONFLICT,
+        "현재 상태에서는 예약 대기를 예약으로 전환할 수 없습니다.", "예약 대기 상태를 확인하십시오."),
     DUPLICATE_WAITING_RESERVATION(HttpStatus.CONFLICT,
-        "중복으로 대기 신청을 할 수 없습니다.", "동일한 이름으로 신청된 예약 대기가 있는지 확인하세요.");
+        "중복으로 대기 신청을 할 수 없습니다.", "동일한 회원의 예약 대기가 있는지 확인하세요.");
 
     private final HttpStatus httpStatus;
     private final String message;

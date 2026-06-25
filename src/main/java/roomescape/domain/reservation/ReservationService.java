@@ -3,12 +3,16 @@ package roomescape.domain.reservation;
 import jakarta.validation.Valid;
 import java.time.Clock;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import roomescape.domain.member.Member;
+import roomescape.domain.member.MemberRepository;
 import roomescape.domain.reservation.dto.ReservationCreationRequest;
 import roomescape.domain.reservation.dto.ReservationCreationResponse;
 import roomescape.domain.reservation.dto.ReservationResponse;
@@ -18,6 +22,7 @@ import roomescape.domain.waitingreservation.WaitingReservationRepository;
 import roomescape.support.exception.ReservationDateErrorCode;
 import roomescape.support.exception.ReservationErrorCode;
 import roomescape.support.exception.RoomescapeException;
+import roomescape.support.exception.MemberErrorCode;
 
 @Service
 @RequiredArgsConstructor
@@ -26,14 +31,24 @@ public class ReservationService {
     private final ReservationRepository reservationRepository;
     private final ReservationSlotResolver reservationSlotResolver;
     private final WaitingReservationRepository waitingReservationRepository;
+    private final MemberRepository memberRepository;
     private final Clock clock;
 
-    public ReservationCreationResponse createReservation(ReservationCreationRequest request) {
+    @Transactional
+    public ReservationCreationResponse createReservation(Long memberId, ReservationCreationRequest request) {
+        Member member = getMember(memberId);
         ReservationSlot slot = reservationSlotResolver.resolve(request.dateId(), request.timeId(), request.themeId());
         validateReservableDate(slot);
         validateNotDuplicated(slot);
-        Reservation savedReservation = reservationRepository.save(
-                request.toEntity(slot.date(), slot.time(), slot.theme()));
+        Reservation reservation = Reservation.createWithoutId(
+                member.getName(),
+                member,
+                slot.date(),
+                slot.time(),
+                slot.theme(),
+                LocalDateTime.now(clock)
+        );
+        Reservation savedReservation = saveReservation(reservation);
         return ReservationCreationResponse.from(savedReservation);
     }
 
@@ -43,8 +58,8 @@ public class ReservationService {
                 .toList();
     }
 
-    public List<ReservationResponse> getReservationsByName(String name) {
-        return reservationRepository.findUpcomingByName(name, LocalDate.now(clock), LocalTime.now(clock)).stream()
+    public List<ReservationResponse> getReservationsByMember(Long memberId) {
+        return reservationRepository.findUpcomingByMemberId(memberId, LocalDate.now(clock), LocalTime.now(clock)).stream()
                 .map(ReservationResponse::from)
                 .toList();
     }
@@ -52,22 +67,24 @@ public class ReservationService {
     @Transactional
     public void deleteReservation(Long id) {
         Reservation reservation = getReservation(id);
-        reservationRepository.delete(reservation);
+        cancel(reservation);
     }
 
     @Transactional
-    public void cancelReservation(Long id) {
+    public void cancelReservation(Long memberId, Long id) {
         Reservation reservation = getReservation(id);
+        validateOwner(reservation, memberId);
         validateReservableDate(reservation);
 
-        deleteReservationOrThrow(id);
+        cancel(reservation);
         reservationRepository.flush();
         promoteOldestWaiting(ReservationSlot.from(reservation));
     }
 
     @Transactional
-    public ReservationResponse updateReservation(Long id, @Valid ReservationUpdateRequest request) {
+    public ReservationResponse updateReservation(Long memberId, Long id, @Valid ReservationUpdateRequest request) {
         Reservation reservation = getReservation(id);
+        validateOwner(reservation, memberId);
         validateReservableDate(reservation);
 
         ReservationSlot currentSlot = ReservationSlot.from(reservation);
@@ -103,16 +120,13 @@ public class ReservationService {
         WaitingReservation waitingReservation = waitingReservationOpt.get();
         reservationRepository.save(Reservation.createWithoutId(
                 waitingReservation.getName(),
+                waitingReservation.getMember(),
                 waitingReservation.getDate(),
                 waitingReservation.getTime(),
-                waitingReservation.getTheme()
+                waitingReservation.getTheme(),
+                LocalDateTime.now(clock)
         ));
-        waitingReservationRepository.delete(waitingReservation);
-    }
-
-    private void deleteReservationOrThrow(Long id) {
-        Reservation reservation = getReservation(id);
-        reservationRepository.delete(reservation);
+        waitingReservation.convert();
     }
 
     private Reservation getReservation(Long id) {
@@ -121,7 +135,34 @@ public class ReservationService {
     }
 
     private void validateNotDuplicated(ReservationSlot slot) {
-        if (reservationRepository.existsByDateIdAndTimeIdAndThemeId(slot.dateId(), slot.timeId(), slot.themeId())) {
+        if (reservationRepository.existsByDateIdAndTimeIdAndThemeIdAndActiveSlotTrue(
+            slot.dateId(),
+            slot.timeId(),
+            slot.themeId()
+        )) {
+            throw new RoomescapeException(ReservationErrorCode.RESERVATION_DUPLICATED);
+        }
+    }
+
+    private Member getMember(Long memberId) {
+        return memberRepository.findById(memberId)
+            .orElseThrow(() -> new RoomescapeException(MemberErrorCode.MEMBER_NOT_FOUND));
+    }
+
+    private void validateOwner(Reservation reservation, Long memberId) {
+        if (!reservation.isOwnedBy(memberId)) {
+            throw new RoomescapeException(ReservationErrorCode.RESERVATION_ACCESS_DENIED);
+        }
+    }
+
+    private void cancel(Reservation reservation) {
+        reservation.cancel(LocalDateTime.now(clock));
+    }
+
+    private Reservation saveReservation(Reservation reservation) {
+        try {
+            return reservationRepository.saveAndFlush(reservation);
+        } catch (DataIntegrityViolationException exception) {
             throw new RoomescapeException(ReservationErrorCode.RESERVATION_DUPLICATED);
         }
     }

@@ -3,6 +3,7 @@ package roomescape.domain.reservation;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,6 +18,8 @@ import roomescape.domain.reservationtime.ReservationTime;
 import roomescape.domain.reservationtime.ReservationTimeRepository;
 import roomescape.domain.theme.Theme;
 import roomescape.domain.theme.ThemeRepository;
+import roomescape.domain.member.Member;
+import roomescape.domain.member.MemberRepository;
 
 @DataJpaTest
 class JpaReservationRepositoryTest {
@@ -37,33 +40,38 @@ class JpaReservationRepositoryTest {
     private ThemeRepository themeRepository;
 
     @Autowired
+    private MemberRepository memberRepository;
+
+    @Autowired
     private TestEntityManager entityManager;
 
     private ReservationDate reservationDate;
     private ReservationTime reservationTime;
     private Theme theme;
+    private Member member;
 
     @BeforeEach
     void setUp() {
         reservationDate = reservationDateRepository.save(ReservationDate.createWithoutId(PLAY_DAY));
         reservationTime = reservationTimeRepository.save(ReservationTime.createWithoutId(START_AT));
         theme = themeRepository.save(Theme.createWithoutId("테마", "설명", "url"));
+        member = memberRepository.save(Member.createUser("user", "encoded", "테스터", LocalDateTime.now()));
     }
 
     @Test
     @DisplayName("이름으로 예약 시작 시각이 지나지 않은 예약을 조회한다.")
     void findUpcomingByName() {
-        Reservation pastReservation = Reservation.createWithoutId("테스터", reservationDate, reservationTime, theme);
+        Reservation pastReservation = reservation(reservationDate, reservationTime, theme);
         reservationRepository.save(pastReservation);
 
         ReservationDate futureDate = ReservationDate.of(102L, LocalDate.of(2026, 5, 15));
         ReservationTime futureTime = reservationTimeRepository.save(ReservationTime.createWithoutId(LocalTime.of(10, 1)));
         Theme futureTheme = themeRepository.save(Theme.createWithoutId("미래테마", "설명", "url"));
         futureDate = reservationDateRepository.save(ReservationDate.createWithoutId(futureDate.getPlayDay()));
-        reservationRepository.save(Reservation.createWithoutId("테스터", futureDate, futureTime, futureTheme));
+        reservationRepository.save(reservation(futureDate, futureTime, futureTheme));
 
-        List<Reservation> reservations = reservationRepository.findUpcomingByName(
-                "테스터",
+        List<Reservation> reservations = reservationRepository.findUpcomingByMemberId(
+                member.getId(),
                 LocalDate.of(2026, 5, 15),
                 LocalTime.of(10, 0)
         );
@@ -77,7 +85,7 @@ class JpaReservationRepositoryTest {
     @DisplayName("예약 조회 후 시간 필드 접근 시 발생하는 SQL을 관찰한다.")
     void observeLazyLoadingSqlWhenAccessTime() {
         Reservation reservation = reservationRepository.save(
-                Reservation.createWithoutId("쿠키", reservationDate, reservationTime, theme)
+                reservation(reservationDate, reservationTime, theme)
         );
         entityManager.flush();
         entityManager.clear();
@@ -86,5 +94,16 @@ class JpaReservationRepositoryTest {
         LocalTime startAt = found.getTime().getStartAt();
 
         assertThat(startAt).isEqualTo(START_AT);
+    }
+
+    private Reservation reservation(ReservationDate date, ReservationTime time, Theme reservationTheme) {
+        return Reservation.createWithoutId(
+            member.getName(),
+            member,
+            date,
+            time,
+            reservationTheme,
+            LocalDateTime.now()
+        );
     }
 }

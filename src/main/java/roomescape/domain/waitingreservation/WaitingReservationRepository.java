@@ -12,7 +12,13 @@ import roomescape.domain.waitingreservation.dto.WaitingReservationWithRank;
 
 public interface WaitingReservationRepository extends JpaRepository<WaitingReservation, Long> {
 
-    boolean existsByNameAndDateIdAndTimeIdAndThemeId(String name, Long dateId, Long timeId, Long themeId);
+    boolean existsByMemberIdAndDateIdAndTimeIdAndThemeIdAndStatus(
+        Long memberId,
+        Long dateId,
+        Long timeId,
+        Long themeId,
+        WaitingReservationStatus status
+    );
 
     @EntityGraph(attributePaths = {"date", "time", "theme"})
     Optional<WaitingReservation> findFirstByDateIdAndTimeIdAndThemeIdOrderByCreatedAtAscIdAsc(
@@ -21,8 +27,20 @@ public interface WaitingReservationRepository extends JpaRepository<WaitingReser
             Long themeId
     );
 
+    Optional<WaitingReservation> findFirstByDateIdAndTimeIdAndThemeIdAndStatusOrderByCreatedAtAscIdAsc(
+        Long dateId,
+        Long timeId,
+        Long themeId,
+        WaitingReservationStatus status
+    );
+
     default Optional<WaitingReservation> findOldestBySlot(long dateId, long timeId, long themeId) {
-        return findFirstByDateIdAndTimeIdAndThemeIdOrderByCreatedAtAscIdAsc(dateId, timeId, themeId);
+        return findFirstByDateIdAndTimeIdAndThemeIdAndStatusOrderByCreatedAtAscIdAsc(
+            dateId,
+            timeId,
+            themeId,
+            WaitingReservationStatus.WAITING
+        );
     }
 
     @EntityGraph(attributePaths = {"date", "time", "theme"})
@@ -76,6 +94,36 @@ public interface WaitingReservationRepository extends JpaRepository<WaitingReser
         LocalDate currentDate,
         @Param("currentTime")
         LocalTime currentTime
+    );
+
+    @EntityGraph(attributePaths = {"date", "time", "theme", "member"})
+    @Query("""
+            select new roomescape.domain.waitingreservation.dto.WaitingReservationWithRank(
+                w,
+                (
+                    select count(w2) + 1
+                    from WaitingReservation w2
+                    where w2.date = w.date
+                      and w2.time = w.time
+                      and w2.theme = w.theme
+                      and w2.status = roomescape.domain.waitingreservation.WaitingReservationStatus.WAITING
+                      and (
+                        w2.createdAt < w.createdAt
+                        or (w2.createdAt = w.createdAt and w2.id < w.id)
+                      )
+                )
+            )
+            from WaitingReservation w
+            where w.member.id = :memberId
+              and w.status = roomescape.domain.waitingreservation.WaitingReservationStatus.WAITING
+              and (w.date.playDay > :currentDate
+                or (w.date.playDay = :currentDate and w.time.startAt > :currentTime))
+            order by w.date.playDay, w.time.startAt, w.id
+            """)
+    List<WaitingReservationWithRank> findUpcomingByMemberIdWithRank(
+        @Param("memberId") Long memberId,
+        @Param("currentDate") LocalDate currentDate,
+        @Param("currentTime") LocalTime currentTime
     );
 
 }

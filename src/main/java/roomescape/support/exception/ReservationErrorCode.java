@@ -7,6 +7,10 @@ import org.springframework.http.HttpStatus;
 public enum ReservationErrorCode implements ErrorCode {
     INVALID_RESERVATION_NAME(HttpStatus.BAD_REQUEST,
         "예약자 성명 데이터가 유효하지 않습니다.", "요청 바디의 name 필드 유효성 제약 조건을 확인하십시오."),
+    INVALID_RESERVATION_MEMBER(HttpStatus.BAD_REQUEST,
+        "예약 회원 정보가 유효하지 않습니다.", "로그인 회원 정보를 확인하십시오."),
+    INVALID_RESERVATION(HttpStatus.BAD_REQUEST,
+        "예약 상태 또는 생성 시각이 유효하지 않습니다.", "예약 생성 정보를 확인하십시오."),
     INVALID_RESERVATION_DATE(HttpStatus.BAD_REQUEST,
         "예약 날짜 식별자 혹은 데이터가 누락되었습니다.", "dateId 필드 포함 여부 및 데이터 형식을 확인하십시오."),
     RESERVATION_NOT_FOUND(HttpStatus.NOT_FOUND,
@@ -19,6 +23,8 @@ public enum ReservationErrorCode implements ErrorCode {
         "예약 시작 10분 전보다 이전인지 확인하십시오."),
     RESERVATION_NOT_CHANGED(HttpStatus.BAD_REQUEST,
         "변경할 예약 날짜와 시간이 기존 예약과 동일합니다.", "기존 예약과 다른 날짜 또는 시간을 선택하십시오."),
+    RESERVATION_ACCESS_DENIED(HttpStatus.FORBIDDEN,
+        "다른 회원의 예약에는 접근할 수 없습니다.", "로그인 계정과 예약 소유자를 확인하십시오."),
     RESERVATION_DUPLICATED(HttpStatus.CONFLICT,
         "동일한 시간대에 중복된 예약 엔티티가 존재합니다.", "데이터베이스의 예약 현황을 확인하고 중복 요청 여부를 검토하십시오.");
 

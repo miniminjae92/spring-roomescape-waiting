@@ -41,5 +41,20 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             @Param("currentTime") LocalTime currentTime
     );
 
-    boolean existsByDateIdAndTimeIdAndThemeId(Long dateId, Long timeId, Long themeId);
+    @EntityGraph(attributePaths = {"date", "time", "theme", "member"})
+    @Query("""
+            select r
+            from Reservation r
+            where r.member.id = :memberId
+              and (r.date.playDay > :currentDate
+                or (r.date.playDay = :currentDate and r.time.startAt > :currentTime))
+            order by r.date.playDay, r.time.startAt
+            """)
+    List<Reservation> findUpcomingByMemberId(
+        @Param("memberId") Long memberId,
+        @Param("currentDate") LocalDate currentDate,
+        @Param("currentTime") LocalTime currentTime
+    );
+
+    boolean existsByDateIdAndTimeIdAndThemeIdAndActiveSlotTrue(Long dateId, Long timeId, Long themeId);
 }

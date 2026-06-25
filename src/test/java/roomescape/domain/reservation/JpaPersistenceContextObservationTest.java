@@ -2,6 +2,7 @@ package roomescape.domain.reservation;
 
 import jakarta.persistence.EntityManager;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -18,6 +19,8 @@ import roomescape.domain.reservationtime.ReservationTime;
 import roomescape.domain.reservationtime.ReservationTimeRepository;
 import roomescape.domain.theme.Theme;
 import roomescape.domain.theme.ThemeRepository;
+import roomescape.domain.member.Member;
+import roomescape.domain.member.MemberRepository;
 
 @DataJpaTest
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
@@ -34,6 +37,9 @@ class JpaPersistenceContextObservationTest {
 
     @Autowired
     private ThemeRepository themeRepository;
+
+    @Autowired
+    private MemberRepository memberRepository;
 
     @Autowired
     private EntityManager entityManager;
@@ -102,9 +108,19 @@ class JpaPersistenceContextObservationTest {
             Theme theme = themeRepository.save(
                     Theme.createWithoutId("쓰기 지연", "IDENTITY 관찰", "/themes/write-behind")
             );
+            Member member = memberRepository.save(
+                Member.createUser("write-behind", "encoded", "write-behind", LocalDateTime.now())
+            );
 
             System.out.println("\n[write-behind] Reservation save 호출 직전");
-            reservationRepository.save(Reservation.createWithoutId("write-behind", date, time, theme));
+            reservationRepository.save(Reservation.createWithoutId(
+                member.getName(),
+                member,
+                date,
+                time,
+                theme,
+                LocalDateTime.now()
+            ));
             System.out.println("[write-behind] Reservation save 호출 직후");
 
             // 관찰 포인트:
@@ -192,7 +208,20 @@ class JpaPersistenceContextObservationTest {
             ReservationDate date = reservationDateRepository.save(ReservationDate.createWithoutId(playDay));
             ReservationTime time = reservationTimeRepository.save(ReservationTime.createWithoutId(startAt));
             Theme theme = themeRepository.save(Theme.createWithoutId(name + " 테마", "설명", "/themes/" + name));
-            Reservation reservation = reservationRepository.save(Reservation.createWithoutId(name, date, time, theme));
+            Member member = memberRepository.save(Member.createUser(
+                name,
+                "encoded",
+                name,
+                LocalDateTime.now()
+            ));
+            Reservation reservation = reservationRepository.save(Reservation.createWithoutId(
+                member.getName(),
+                member,
+                date,
+                time,
+                theme,
+                LocalDateTime.now()
+            ));
             return reservation.getId();
         });
     }

@@ -1,5 +1,6 @@
 INSERT INTO member (login_id, password_hash, name, role, created_at)
-VALUES ('manager', '120000:cm9vbWVzY2FwZS1hZG1pbg==:Rsjyx2r1Hk61aHoeG2LRlF2Sjf50zb4ph6tZqqn6mCo=', '관리자', 'MANAGER', CURRENT_TIMESTAMP);
+VALUES ('manager', '120000:cm9vbWVzY2FwZS1hZG1pbg==:Rsjyx2r1Hk61aHoeG2LRlF2Sjf50zb4ph6tZqqn6mCo=', '관리자', 'MANAGER', CURRENT_TIMESTAMP),
+       ('user', '120000:cm9vbWVzY2FwZS1hZG1pbg==:Rsjyx2r1Hk61aHoeG2LRlF2Sjf50zb4ph6tZqqn6mCo=', '고래', 'USER', CURRENT_TIMESTAMP);
 
 INSERT INTO reservation_time (start_at)
 VALUES ('10:00'),
@@ -35,44 +36,41 @@ VALUES ('공포', '오금이 저리는 공포입니다.', '/themes/scary'),
        ('코미디', '유쾌한 소동이 가득한 코미디 테마입니다.', '/themes/comedy'),
        ('느와르', '어두운 도시를 배경으로 한 느와르 테마입니다.', '/themes/noir');
 
-INSERT INTO reservation (name, date_id, time_id, theme_id)
-VALUES ('보예', 1, 1, 1),
-       ('이산', 1, 2, 1),
-       ('나무', 2, 1, 2),
-       ('피즈', 2, 3, 2),
-       ('제이콥', 3, 1, 1),
-       ('보예짱', 3, 4, 3),
-       ('이산짱', 3, 2, 1),
-       ('나무짱', 4, 3, 3),
-       ('피즈짱', 4, 1, 2),
-       ('샤를', 4, 4, 1),
-       ('마이찬', 5, 2, 1),
-       ('샤를짱', 5, 3, 8),
-       ('마이찬짱', 5, 4, 5),
-       ('브라운', 6, 2, 11),
-       ('네오', 6, 4, 4),
-       ('브리', 6, 1, 9),
-       ('구구', 7, 3, 6),
-       ('리사', 7, 1, 12),
-       ('레서', 7, 4, 7),
-       ('바니', 8, 2, 10),
-       ('소낙눈', 8, 3, 3),
-       ('카야', 8, 4, 8),
-       ('피노', 9, 1, 5),
-       ('우디', 9, 2, 11),
-       ('캐모', 10, 3, 4),
-       ('아이큐', 10, 1, 9),
-       ('쿠다', 11, 3, 6),
-       ('고래', 11, 4, 10);
+INSERT INTO reservation (name, member_id, date_id, time_id, theme_id, status, active_slot, created_at)
+VALUES ('고래', 2, 1, 1, 1, 'CONFIRMED', TRUE, CURRENT_TIMESTAMP),
+       ('고래', 2, 1, 2, 1, 'CONFIRMED', TRUE, CURRENT_TIMESTAMP),
+       ('고래', 2, 2, 1, 2, 'CONFIRMED', TRUE, CURRENT_TIMESTAMP),
+       ('고래', 2, 2, 3, 2, 'CONFIRMED', TRUE, CURRENT_TIMESTAMP),
+       ('고래', 2, 3, 1, 1, 'CONFIRMED', TRUE, CURRENT_TIMESTAMP),
+       ('고래', 2, 3, 4, 3, 'CONFIRMED', TRUE, CURRENT_TIMESTAMP),
+       ('고래', 2, 3, 2, 1, 'CONFIRMED', TRUE, CURRENT_TIMESTAMP),
+       ('고래', 2, 4, 3, 3, 'CONFIRMED', TRUE, CURRENT_TIMESTAMP),
+       ('고래', 2, 4, 1, 2, 'CONFIRMED', TRUE, CURRENT_TIMESTAMP),
+       ('고래', 2, 4, 4, 1, 'CONFIRMED', TRUE, CURRENT_TIMESTAMP),
+       ('고래', 2, 5, 2, 1, 'CONFIRMED', TRUE, CURRENT_TIMESTAMP),
+       ('고래', 2, 5, 3, 8, 'CONFIRMED', TRUE, CURRENT_TIMESTAMP),
+       ('고래', 2, 5, 4, 5, 'CONFIRMED', TRUE, CURRENT_TIMESTAMP),
+       ('고래', 2, 6, 2, 11, 'CONFIRMED', TRUE, CURRENT_TIMESTAMP),
+       ('고래', 2, 6, 4, 4, 'CONFIRMED', TRUE, CURRENT_TIMESTAMP),
+       ('고래', 2, 6, 1, 9, 'CONFIRMED', TRUE, CURRENT_TIMESTAMP),
+       ('고래', 2, 7, 3, 6, 'CONFIRMED', TRUE, CURRENT_TIMESTAMP),
+       ('고래', 2, 7, 1, 12, 'CONFIRMED', TRUE, CURRENT_TIMESTAMP),
+       ('고래', 2, 7, 4, 7, 'CONFIRMED', TRUE, CURRENT_TIMESTAMP),
+       ('고래', 2, 8, 2, 10, 'CONFIRMED', TRUE, CURRENT_TIMESTAMP),
+       ('고래', 2, 8, 3, 3, 'CONFIRMED', TRUE, CURRENT_TIMESTAMP),
+       ('고래', 2, 8, 4, 8, 'CONFIRMED', TRUE, CURRENT_TIMESTAMP),
+       ('고래', 2, 9, 1, 5, 'CONFIRMED', TRUE, CURRENT_TIMESTAMP),
+       ('고래', 2, 9, 2, 11, 'CONFIRMED', TRUE, CURRENT_TIMESTAMP),
+       ('고래', 2, 10, 3, 4, 'CONFIRMED', TRUE, CURRENT_TIMESTAMP),
+       ('고래', 2, 10, 1, 9, 'CONFIRMED', TRUE, CURRENT_TIMESTAMP),
+       ('고래', 2, 11, 3, 6, 'CONFIRMED', TRUE, CURRENT_TIMESTAMP),
+       ('고래', 2, 11, 4, 10, 'CONFIRMED', TRUE, CURRENT_TIMESTAMP);
 
 -- 고래 대기 데이터
 -- 슬롯1 (date+1, time2, theme1): 이산이 먼저 대기 → 고래 2순위
 -- 슬롯2 (date+2, time2, theme11): 고래만 대기 → 고래 1순위
 -- 슬롯3 (date+3, time3, theme6): 보예·나무가 먼저 대기 → 고래 3순위
-INSERT INTO waiting_reservation (name, date_id, time_id, theme_id, created_at)
-VALUES ('이산', 5, 2, 1,  CURRENT_TIMESTAMP - INTERVAL '3' HOUR),
-       ('고래', 5, 2, 1,  CURRENT_TIMESTAMP - INTERVAL '2' HOUR),
-       ('고래', 6, 2, 11, CURRENT_TIMESTAMP - INTERVAL '2' HOUR),
-       ('보예', 7, 3, 6,  CURRENT_TIMESTAMP - INTERVAL '4' HOUR),
-       ('나무', 7, 3, 6,  CURRENT_TIMESTAMP - INTERVAL '3' HOUR),
-       ('고래', 7, 3, 6,  CURRENT_TIMESTAMP - INTERVAL '2' HOUR);
+INSERT INTO waiting_reservation (name, member_id, date_id, time_id, theme_id, created_at, status)
+VALUES ('고래', 2, 5, 2, 1,  CURRENT_TIMESTAMP - INTERVAL '2' HOUR, 'WAITING'),
+       ('고래', 2, 6, 2, 11, CURRENT_TIMESTAMP - INTERVAL '2' HOUR, 'WAITING'),
+       ('고래', 2, 7, 3, 6,  CURRENT_TIMESTAMP - INTERVAL '2' HOUR, 'WAITING');

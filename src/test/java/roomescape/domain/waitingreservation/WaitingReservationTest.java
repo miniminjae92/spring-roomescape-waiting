@@ -1,15 +1,14 @@
 package roomescape.domain.waitingreservation;
 
-import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.NullAndEmptySource;
-import org.junit.jupiter.params.provider.ValueSource;
+import roomescape.domain.member.Member;
+import roomescape.domain.member.MemberRole;
 import roomescape.domain.reservationdate.ReservationDate;
 import roomescape.domain.reservationtime.ReservationTime;
 import roomescape.domain.theme.Theme;
@@ -17,49 +16,46 @@ import roomescape.support.exception.RoomescapeException;
 
 class WaitingReservationTest {
 
+    private static final LocalDateTime CREATED_AT = LocalDateTime.of(2026, 6, 25, 10, 0);
+
     @Test
-    void 예약_대기가_정상적으로_생성된다() {
-        // given
-        String name = "고래";
-        ReservationDate date = ReservationDate.createWithoutId(LocalDate.of(2026, 5, 27));
-        ReservationTime time = ReservationTime.createWithoutId(LocalTime.of(10, 0));
-        Theme theme = Theme.createWithoutId("공포", "테마 내용", "themes/theme");
-        LocalDateTime createdAt = LocalDateTime.of(2026, 5, 26, 11, 0);
+    void 예약_대기를_취소해도_이력을_보존한다() {
+        WaitingReservation waitingReservation = waitingReservation();
+        LocalDateTime canceledAt = CREATED_AT.plusHours(1);
 
-        // when & then
-        assertThatCode(() -> WaitingReservation.createWithoutId(name, date, time, theme, createdAt))
-            .doesNotThrowAnyException();
-    }
+        waitingReservation.cancel(canceledAt);
 
-    @ParameterizedTest
-    @NullAndEmptySource
-    @ValueSource(strings = {" ", "   "})
-    void 이름이_null이면_예외가_발생한다(String invalidName) {
-        // given
-        String name = invalidName;
-        ReservationDate date = ReservationDate.createWithoutId(LocalDate.of(2026, 5, 27));
-        ReservationTime time = ReservationTime.createWithoutId(LocalTime.of(10, 0));
-        Theme theme = Theme.createWithoutId("공포", "테마 내용", "themes/theme");
-        LocalDateTime createdAt = LocalDateTime.of(2026, 5, 26, 11, 0);
-
-        // when & then
-        assertThatThrownBy(() -> WaitingReservation.createWithoutId(name, date, time, theme, createdAt))
-            .isInstanceOf(RoomescapeException.class)
-            .hasMessageContaining("예약자 성명 데이터가 유효하지 않습니다.");
+        assertThat(waitingReservation.getStatus()).isEqualTo(WaitingReservationStatus.CANCELED);
+        assertThat(waitingReservation.getCanceledAt()).isEqualTo(canceledAt);
     }
 
     @Test
-    void 생성_시간이_null이면_예외가_발생한다() {
-        // given
-        String name = "고래";
-        ReservationDate date = ReservationDate.createWithoutId(LocalDate.of(2026, 5, 27));
-        ReservationTime time = ReservationTime.createWithoutId(LocalTime.of(10, 0));
-        Theme theme = Theme.createWithoutId("공포", "테마 내용", "themes/theme");
-        LocalDateTime createdAt = null;
+    void 대기를_예약으로_전환한다() {
+        WaitingReservation waitingReservation = waitingReservation();
 
-        // when & then
-        assertThatThrownBy(() -> WaitingReservation.createWithoutId(name, date, time, theme, createdAt))
-            .isInstanceOf(RoomescapeException.class)
-            .hasMessageContaining("생성 시간이 유효하지 않습니다.");
+        waitingReservation.convert();
+
+        assertThat(waitingReservation.getStatus()).isEqualTo(WaitingReservationStatus.CONVERTED);
+    }
+
+    @Test
+    void 이미_처리한_대기는_다시_전환할_수_없다() {
+        WaitingReservation waitingReservation = waitingReservation();
+        waitingReservation.convert();
+
+        assertThatThrownBy(waitingReservation::convert)
+            .isInstanceOf(RoomescapeException.class);
+    }
+
+    private WaitingReservation waitingReservation() {
+        Member member = Member.of(1L, "user", "encoded", "고래", MemberRole.USER, CREATED_AT);
+        return WaitingReservation.createWithoutId(
+            member.getName(),
+            member,
+            ReservationDate.createWithoutId(LocalDate.of(2026, 7, 1)),
+            ReservationTime.createWithoutId(LocalTime.of(10, 0)),
+            Theme.createWithoutId("공포", "설명", "/themes/scary"),
+            CREATED_AT
+        );
     }
 }
